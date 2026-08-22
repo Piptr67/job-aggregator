@@ -1,17 +1,17 @@
 import requests
 import xml.etree.ElementTree as ET
 
-url = "https://himalayas.app/jobs/rss"
-response = requests.get(url, timeout=10)
-
-root = ET.fromstring(response.text)
-channel = root.find("channel")
-items = channel.findall("item")
-
 namespaces = {"himalayas": "https://himalayas.app/ns/jobs"}
 
-jobs = [
-    {
+def fetch_url(url: str) -> requests.Response:
+    return requests.get(url, timeout=10)
+
+def extract_items(response: requests.Response) -> list[ET.Element]:
+    root = ET.fromstring(response.text)
+    return root.find("channel").findall("item")
+
+def item_to_job(item: ET.Element) -> dict:
+    return  {
         "title": item.findtext("title"),
         "description": item.findtext("description"),
         "link": item.findtext("link"),
@@ -21,5 +21,7 @@ jobs = [
             namespaces=namespaces,
         ),
     } 
-    for item in items
-]
+
+response = fetch_url("https://himalayas.app/jobs/rss")
+
+jobs = [item_to_job(item) for item in extract_items(response)]

@@ -4,7 +4,9 @@ import xml.etree.ElementTree as ET
 namespaces = {"himalayas": "https://himalayas.app/ns/jobs"}
 
 def fetch_url(url: str) -> requests.Response:
-    return requests.get(url, timeout=10)
+    res = requests.get(url, timeout=0.10)
+    res.raise_for_status()
+    return res
 
 def extract_items(response: requests.Response) -> list[ET.Element]:
     root = ET.fromstring(response.text)
@@ -22,6 +24,25 @@ def item_to_job(item: ET.Element) -> dict:
         ),
     } 
 
-response = fetch_url("https://himalayas.app/jobs/rss")
+def main():
+    url = "https://himalayas.app/jobs/rss"
 
-jobs = [item_to_job(item) for item in extract_items(response)]
+    try:
+        response = fetch_url(url)
+    except requests.HTTPError:
+        print(f"Fetching failed for URL: {url}")
+        return
+    except requests.Timeout:
+        print(f"Fetching took too long for URL: {url}")
+        return
+    except requests.ConnectionError:
+        print(f"Could not reach the network for URL: {url}")
+        return
+    except requests.RequestException:
+        print(f"Unexpected request error for URL: {url}")
+        return
+
+    jobs = [item_to_job(item) for item in extract_items(response)]
+
+if __name__ == "__main__":
+    main()

@@ -53,7 +53,7 @@ class HimalayasSource(Source):
         return res
 
 def extract_items(response: requests.Response) -> list[ET.Element]:
-        root = ET.fromstring(response.text)
+        root = ET.fromstring(response.content)
 
         channel = root.find("channel")
         if channel is None:

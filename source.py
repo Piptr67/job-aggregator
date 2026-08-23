@@ -14,19 +14,19 @@ class HimalayasSource(Source):
         self.url = url
 
     def fetch(self) -> list[dict]:
-        try:
+        try: 
             response = self.fetch_url()
-        except requests.HTTPError:
-            print(f"Fetching failed for URL: {self.url}")
-            return []
-        except requests.Timeout:
-            print(f"Fetching took too long for URL: {self.url}")
-            return []
-        except requests.ConnectionError:
-            print(f"Could not reach the network for URL: {self.url}")
-            return []
-        except requests.RequestException:
-            print(f"Unexpected request error for URL: {self.url}")
+        except requests.RequestException as e: 
+            match e: 
+                case requests.HTTPError(): 
+                    msg = f"Fetching failed for URL: {self.url}" 
+                case requests.Timeout():
+                    msg = f"Fetching took too long for URL: {self.url}" 
+                case requests.ConnectionError(): 
+                    msg = f"Could not reach the network for URL: {self.url}" 
+                case _: 
+                    msg = f"Unexpected request error for URL: {self.url}" 
+            print(msg) 
             return []
     
         try:
@@ -77,3 +77,9 @@ def item_to_job(item: ET.Element) -> dict:
                 namespaces=namespaces,
             ),
         } 
+if __name__ == "__main__":
+    source = HimalayasSource("https://himalayas.app/jobs/rss")
+    jobs = source.fetch()
+
+    print(f"Fetched {len(jobs)} jobs")
+    print(jobs[:1])

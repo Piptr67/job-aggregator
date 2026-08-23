@@ -29,7 +29,7 @@ class HimalayasSource(Source):
             return []
     
         try:
-            items = extract_items(response)
+            items = self.extract_items(response)
         except ET.ParseError:
             print(f"Could not parse XML from URL: {self.url}")
             return []
@@ -40,7 +40,7 @@ class HimalayasSource(Source):
         jobs = []
         for item in items:
             try:
-                jobs.append(item_to_job(item, self.namespaces))
+                jobs.append(self.item_to_job(item, self.namespaces))
             except ValueError as e:
                 print(f"Skipping item: {e}")
 
@@ -51,28 +51,35 @@ class HimalayasSource(Source):
         res.raise_for_status()
         return res
 
-def extract_items(response: requests.Response) -> list[ET.Element]:
-        root = ET.fromstring(response.content)
+    def extract_items(self, response: requests.Response) -> list[ET.Element]:
+            root = ET.fromstring(response.content)
 
-        channel = root.find("channel")
-        if channel is None:
-            raise ValueError("RSS feed is missing channel")
-        return channel.findall("item")
+            channel = root.find("channel")
+            if channel is None:
+                raise ValueError("RSS feed is missing channel")
+            return channel.findall("item")
 
-def item_to_job(item: ET.Element, namespaces: dict) -> dict:
-        link = item.findtext("link")
+    def item_to_job(self, item: ET.Element, namespaces: dict) -> dict:
+            link = item.findtext("link")
 
-        if link is None:
-            raise ValueError("Job is missing link")
-        
-        return  {
-            "title": item.findtext("title", default="Unknown"),
-            "description": item.findtext("description", default="Unknown"),
-            "link": link,
-            "pubDate": item.findtext("pubDate", default="Unknown"),
-            "company": item.findtext(
-                "himalayas:companyName",
-                default="Unknown",
-                namespaces=namespaces,
-            ),
-        } 
+            if link is None:
+                raise ValueError("Job is missing link")
+            
+            return  {
+                "title": item.findtext("title", default="Unknown"),
+                "description": item.findtext("description", default="Unknown"),
+                "link": link,
+                "pubDate": item.findtext("pubDate", default="Unknown"),
+                "company": item.findtext(
+                    "himalayas:companyName",
+                    default="Unknown",
+                    namespaces=namespaces,
+                ),
+            } 
+
+if __name__ == "__main__":
+    source = HimalayasSource("https://himalayas.app/jobs/rss")
+    jobs = source.fetch()
+
+    print(f"Fetched {len(jobs)} jobs")
+    print(jobs[:1])

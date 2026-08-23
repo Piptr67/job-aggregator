@@ -17,13 +17,19 @@ def extract_items(response: requests.Response) -> list[ET.Element]:
     return channel.findall("item")
 
 def item_to_job(item: ET.Element) -> dict:
+    link = item.findtext("link")
+
+    if link is None:
+        raise ValueError("Job is missing link")
+    
     return  {
-        "title": item.findtext("title"),
-        "description": item.findtext("description"),
-        "link": item.findtext("link"),
-        "pubDate": item.findtext("pubDate"),
+        "title": item.findtext("title", default="Unknown"),
+        "description": item.findtext("description", default="Unknown"),
+        "link": link,
+        "pubDate": item.findtext("pubDate", default="Unknown"),
         "company": item.findtext(
             "himalayas:companyName",
+            default="Unknown",
             namespaces=namespaces,
         ),
     } 
@@ -55,7 +61,12 @@ def main():
         print(f"Invalid RSS feed from URL: {url}")
         return
 
-    jobs = [item_to_job(item) for item in items]
+    jobs = []
+    for item in items:
+        try:
+            jobs.append(item_to_job(item))
+        except ValueError as e:
+            print(f"Skipping item: {e}")
 
 if __name__ == "__main__":
     main()

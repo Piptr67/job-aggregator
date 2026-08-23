@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 import requests
 import xml.etree.ElementTree as ET
 
-namespaces = {"himalayas": "https://himalayas.app/ns/jobs"}
-
 class Source(ABC):
     @abstractmethod
     def fetch(self) -> list[dict]:
@@ -12,6 +10,7 @@ class Source(ABC):
 class HimalayasSource(Source):
     def __init__(self, url: str):
         self.url = url
+        self.namespaces = {"himalayas": "https://himalayas.app/ns/jobs"}
 
     def fetch(self) -> list[dict]:
         try: 
@@ -41,7 +40,7 @@ class HimalayasSource(Source):
         jobs = []
         for item in items:
             try:
-                jobs.append(item_to_job(item))
+                jobs.append(item_to_job(item, self.namespaces))
             except ValueError as e:
                 print(f"Skipping item: {e}")
 
@@ -60,7 +59,7 @@ def extract_items(response: requests.Response) -> list[ET.Element]:
             raise ValueError("RSS feed is missing channel")
         return channel.findall("item")
 
-def item_to_job(item: ET.Element) -> dict:
+def item_to_job(item: ET.Element, namespaces: dict) -> dict:
         link = item.findtext("link")
 
         if link is None:
@@ -77,9 +76,3 @@ def item_to_job(item: ET.Element) -> dict:
                 namespaces=namespaces,
             ),
         } 
-if __name__ == "__main__":
-    source = HimalayasSource("https://himalayas.app/jobs/rss")
-    jobs = source.fetch()
-
-    print(f"Fetched {len(jobs)} jobs")
-    print(jobs[:1])

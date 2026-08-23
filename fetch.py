@@ -4,13 +4,17 @@ import xml.etree.ElementTree as ET
 namespaces = {"himalayas": "https://himalayas.app/ns/jobs"}
 
 def fetch_url(url: str) -> requests.Response:
-    res = requests.get(url, timeout=0.10)
+    res = requests.get(url, timeout=10)
     res.raise_for_status()
     return res
 
 def extract_items(response: requests.Response) -> list[ET.Element]:
     root = ET.fromstring(response.text)
-    return root.find("channel").findall("item")
+
+    channel = root.find("channel")
+    if channel is None:
+        raise ValueError("RSS feed is missing channel")
+    return channel.findall("item")
 
 def item_to_job(item: ET.Element) -> dict:
     return  {
@@ -42,7 +46,16 @@ def main():
         print(f"Unexpected request error for URL: {url}")
         return
 
-    jobs = [item_to_job(item) for item in extract_items(response)]
+    try:
+        items = extract_items(response)
+    except ET.ParseError:
+        print(f"Could not parse XML from URL: {url}")
+        return
+    except ValueError:
+        print(f"Invalid RSS feed from URL: {url}")
+        return
+
+    jobs = [item_to_job(item) for item in items]
 
 if __name__ == "__main__":
     main()

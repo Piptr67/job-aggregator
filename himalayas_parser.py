@@ -1,5 +1,7 @@
+import logging
 import xml.etree.ElementTree as ET
 
+logger = logging.getLogger(__name__)
 
 class HimalayasParser:
     def __init__(self):
@@ -15,7 +17,7 @@ class HimalayasParser:
             try:
                 jobs.append(self._item_to_job(item))
             except ValueError as e:
-                print(f"Skipping item: {e}")
+                logger.warning("Skipping item: %s", e)
 
         return jobs
 

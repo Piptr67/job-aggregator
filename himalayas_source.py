@@ -1,6 +1,12 @@
+import logging
 from abc import ABC, abstractmethod
+
 import requests
+
 from himalayas_parser import HimalayasParser
+
+
+logger = logging.getLogger(__name__)
 
 class Source(ABC):
     @abstractmethod
@@ -25,13 +31,13 @@ class HimalayasSource(Source):
                     msg = f"Could not reach the network for URL: {self.url}" 
                 case _: 
                     msg = f"Unexpected request error for URL: {self.url}" 
-            print(msg) 
+            logger.error(msg) 
             return []
         
         try:
             return self.parser.parse(response.content)
         except ValueError as e:
-            print(f"Invalid RSS feed from URL: {self.url}: {e}")
+            logger.error("Invalid RSS feed from URL: %s: %s", self.url, e)
             return []
         
     def _fetch_url(self) -> requests.Response:
@@ -40,6 +46,8 @@ class HimalayasSource(Source):
         return res
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     source = HimalayasSource("https://himalayas.app/jobs/rss")
     jobs = source.fetch()
 

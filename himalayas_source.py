@@ -5,7 +5,6 @@ import requests
 
 from himalayas_parser import HimalayasParser
 
-
 logger = logging.getLogger(__name__)
 
 class Source(ABC):
@@ -44,12 +43,3 @@ class HimalayasSource(Source):
         res = requests.get(self.url, timeout=10)
         res.raise_for_status()
         return res
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-
-    source = HimalayasSource("https://himalayas.app/jobs/rss")
-    jobs = source.fetch()
-
-    print(f"Fetched {len(jobs)} jobs")
-    print(jobs[:1])

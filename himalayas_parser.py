@@ -1,6 +1,8 @@
 import logging
 import xml.etree.ElementTree as ET
 
+from job import Job
+
 logger = logging.getLogger(__name__)
 
 class HimalayasParser:
@@ -9,7 +11,7 @@ class HimalayasParser:
             "himalayas": "https://himalayas.app/ns/jobs"
         }
 
-    def parse(self, content: bytes) -> list[dict]:
+    def parse(self, content: bytes) -> list[Job]:
         items = self._extract_items(content)
 
         jobs = []
@@ -33,20 +35,20 @@ class HimalayasParser:
 
         return channel.findall("item")
 
-    def _item_to_job(self, item: ET.Element) -> dict:
+    def _item_to_job(self, item: ET.Element) -> Job:
         link = item.findtext("link")
 
         if link is None:
             raise ValueError("Job is missing link")
 
-        return {
-            "title": item.findtext("title", default="Unknown"),
-            "description": item.findtext("description", default="Unknown"),
-            "link": link,
-            "pubDate": item.findtext("pubDate", default="Unknown"),
-            "company": item.findtext(
+        return Job(
+            title=item.findtext("title", default="Unknown"),
+            description=item.findtext("description", default="Unknown"),
+            link=link,
+            pub_date=item.findtext("pubDate", default="Unknown"),
+            company=item.findtext(
                 "himalayas:companyName",
                 default="Unknown",
                 namespaces=self.namespaces,
             ),
-        }
+        )

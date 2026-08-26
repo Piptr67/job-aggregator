@@ -19,11 +19,7 @@ CREATE_JOBS_TABLE_SQL = """
 
 INSERT_JOBS_SQL = """
     INSERT OR IGNORE INTO jobs (
-    title,
-    description,
-    link,
-    pub_date,
-    company
+    title, description, link, pub_date, company
     )
     VALUES (:title, :description, :link, :pub_date, :company)
 """

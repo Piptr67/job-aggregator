@@ -37,7 +37,7 @@ def get_connection(db_name: str = DB_NAME) -> sqlite3.Connection:
     return conn
 
 def init_db(db_name: str = DB_NAME) -> None:
-    with get_connection() as connection:
+    with get_connection(db_name) as connection:
         connection.execute(CREATE_JOBS_TABLE_SQL)
 
 def save_jobs(jobs: list[Job], db_name: str = DB_NAME) -> int:

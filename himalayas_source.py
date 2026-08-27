@@ -3,13 +3,14 @@ from abc import ABC, abstractmethod
 
 import requests
 
+from job import Job
 from himalayas_parser import HimalayasParser
 
 logger = logging.getLogger(__name__)
 
 class Source(ABC):
     @abstractmethod
-    def fetch(self) -> list[dict]:
+    def fetch(self) -> list[Job]:
         pass
 
 class HimalayasSource(Source):
@@ -17,7 +18,7 @@ class HimalayasSource(Source):
         self.url = url
         self.parser = HimalayasParser()
         
-    def fetch(self) -> list[dict]:
+    def fetch(self) -> list[Job]:
         try: 
             response = self._fetch_url()
         except requests.RequestException as e: 
@@ -30,7 +31,7 @@ class HimalayasSource(Source):
                     msg = f"Could not reach the network for URL: {self.url}" 
                 case _: 
                     msg = f"Unexpected request error for URL: {self.url}" 
-            logger.error(msg) 
+            logger.error("%s | Details: %s", msg, e) 
             return []
         
         try:

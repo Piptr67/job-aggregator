@@ -7,5 +7,3 @@ class Job:
     link: str
     pub_date: str
     company: str
-
-    

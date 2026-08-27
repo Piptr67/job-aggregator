@@ -6,22 +6,22 @@ from job import Job
 DB_NAME = "jobs.db"
 
 CREATE_JOBS_TABLE_SQL = """
-    CREATE TABLE IF NOT EXISTS jobs (
-        id INTEGER PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT,
-        link TEXT NOT NULL UNIQUE,
-        pub_date TEXT,
-        company TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """
+CREATE TABLE IF NOT EXISTS jobs (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    link TEXT NOT NULL UNIQUE,
+    pub_date TEXT,
+    company TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
 
 INSERT_JOBS_SQL = """
-    INSERT OR IGNORE INTO jobs (
-    title, description, link, pub_date, company
-    )
-    VALUES (:title, :description, :link, :pub_date, :company)
+INSERT OR IGNORE INTO jobs (
+title, description, link, pub_date, company
+)
+VALUES (:title, :description, :link, :pub_date, :company)
 """
 
 GET_JOBS_SQL = """

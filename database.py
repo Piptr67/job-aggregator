@@ -31,6 +31,16 @@ ORDER BY id DESC
 LIMIT ?;
 """
 
+SEARCH_JOBS_SQL = """
+SELECT title, description, link, pub_date, company
+FROM jobs
+WHERE title LIKE :query
+    OR description LIKE :query
+    OR company LIKE :query
+ORDER BY id DESC
+LIMIT :limit;
+"""
+
 def get_connection(db_name: str = DB_NAME) -> sqlite3.Connection:
     conn = sqlite3.connect(db_name)
     conn.row_factory = sqlite3.Row
@@ -49,5 +59,14 @@ def save_jobs(jobs: list[Job], db_name: str = DB_NAME) -> int:
 def get_jobs(limit: int = 50, db_name: str = DB_NAME) -> list[Job]:
     with get_connection(db_name) as conn:
         rows = conn.execute(GET_JOBS_SQL, (limit,)).fetchall()
+
+    return [Job(**row) for row in rows]
+
+def search_jobs(query: str, limit: int = 50, db_name: str = DB_NAME) -> list[Job]:
+    with get_connection(db_name) as conn:
+        rows = conn.execute(
+            SEARCH_JOBS_SQL,
+            {"query": f"%{query}%", "limit": limit},
+        ).fetchall()
 
     return [Job(**row) for row in rows]

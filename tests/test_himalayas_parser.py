@@ -55,3 +55,78 @@ def test_parse_skips_job_without_link():
     jobs = parser.parse(content)
 
     assert jobs == []
+
+def test_parse_missing_channel():
+    parser = HimalayasParser()
+    content = b"<rss></rss>"
+
+    with pytest.raises(ValueError, match="RSS feed is missing channel"):
+        parser.parse(content)
+
+def test_parse_job_with_missing_optional_fields():
+    parser = HimalayasParser()
+
+    content = b"""
+    <rss>
+        <channel>
+            <item>
+                <link>https://example.com/job</link>
+            </item>
+        </channel>
+    </rss>
+    """
+
+    jobs = parser.parse(content)
+
+    assert len(jobs) == 1
+    assert jobs[0].title == "Unknown"
+    assert jobs[0].description == "Unknown"
+    assert jobs[0].pub_date == "Unknown"
+    assert jobs[0].company == "Unknown"
+
+def test_parse_empty_feed():
+    parser = HimalayasParser()
+
+    content = b"""
+    <rss>
+        <channel>
+        </channel>
+    </rss>
+    """
+
+    jobs = parser.parse(content)
+
+    assert jobs == []
+
+def test_parse_empty_content():
+    parser = HimalayasParser()
+
+    with pytest.raises(ValueError, match="Malformed XML"):
+        parser.parse(b"")
+
+def test_parse_multiple_jobs_skips_invalid_job():
+    parser = HimalayasParser()
+
+    content = b"""
+    <rss>
+        <channel>
+            <item>
+                <title>Backend Engineer</title>
+                <link>https://example.com/backend</link>
+            </item>
+            <item>
+                <title>Missing Link Job</title>
+            </item>
+            <item>
+                <title>Frontend Engineer</title>
+                <link>https://example.com/frontend</link>
+            </item>
+        </channel>
+    </rss>
+    """
+
+    jobs = parser.parse(content)
+
+    assert len(jobs) == 2
+    assert jobs[0].title == "Backend Engineer"
+    assert jobs[1].title == "Frontend Engineer"

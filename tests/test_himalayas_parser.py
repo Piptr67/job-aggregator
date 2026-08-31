@@ -1,6 +1,7 @@
 import pytest
 from himalayas_parser import HimalayasParser
 
+
 def test_parse_job():
     content = b"""
     <rss>
@@ -31,12 +32,14 @@ def test_parse_job():
     assert job.pub_date == "Mon, 01 Jan 2026 12:00:00 GMT"
     assert job.company == "Acme Corp"
 
+
 def test_parse_malformed_xml():
     parser = HimalayasParser()
     content = b"<rss><channel>"
 
     with pytest.raises(ValueError, match="Malformed XML"):
         parser.parse(content)
+
 
 def test_parse_skips_job_without_link():
     parser = HimalayasParser()
@@ -56,12 +59,14 @@ def test_parse_skips_job_without_link():
 
     assert jobs == []
 
+
 def test_parse_missing_channel():
     parser = HimalayasParser()
     content = b"<rss></rss>"
 
     with pytest.raises(ValueError, match="RSS feed is missing channel"):
         parser.parse(content)
+
 
 def test_parse_job_with_missing_optional_fields():
     parser = HimalayasParser()
@@ -84,6 +89,7 @@ def test_parse_job_with_missing_optional_fields():
     assert jobs[0].pub_date == "Unknown"
     assert jobs[0].company == "Unknown"
 
+
 def test_parse_empty_feed():
     parser = HimalayasParser()
 
@@ -98,11 +104,13 @@ def test_parse_empty_feed():
 
     assert jobs == []
 
+
 def test_parse_empty_content():
     parser = HimalayasParser()
 
     with pytest.raises(ValueError, match="Malformed XML"):
         parser.parse(b"")
+
 
 def test_parse_multiple_jobs_skips_invalid_job():
     parser = HimalayasParser()

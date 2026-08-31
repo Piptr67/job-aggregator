@@ -1,5 +1,6 @@
-from job import Job
 from database import init_db, save_jobs, get_jobs, search_jobs
+from job import Job
+
 
 def test_save_jobs(tmp_path):
     db_name = str(tmp_path / "test.db")
@@ -27,6 +28,7 @@ def test_save_jobs(tmp_path):
 
     assert inserted == 2
 
+
 def test_save_jobs_ignores_duplicates(tmp_path):
     db_name = str(tmp_path / "test.db")
 
@@ -45,6 +47,7 @@ def test_save_jobs_ignores_duplicates(tmp_path):
 
     assert first_insert == 1
     assert second_insert == 0
+
 
 def test_get_jobs(tmp_path):
     db_name = str(tmp_path / "test.db")
@@ -76,6 +79,7 @@ def test_get_jobs(tmp_path):
     assert saved_jobs[0].title == "Frontend Developer"
     assert saved_jobs[1].title == "Backend Engineer"
 
+
 def test_search_jobs(tmp_path):
     db_name = str(tmp_path / "test.db")
 
@@ -105,6 +109,7 @@ def test_search_jobs(tmp_path):
     assert len(results) == 1
     assert results[0].title == "Python Backend Engineer"
 
+
 def test_search_jobs_is_case_insensitive(tmp_path):
     db_name = str(tmp_path / "test.db")
 
@@ -126,6 +131,7 @@ def test_search_jobs_is_case_insensitive(tmp_path):
 
     assert len(results) == 1
     assert results[0].title == "Python Backend Engineer"
+
 
 def test_search_jobs_across_fields(tmp_path):
     db_name = str(tmp_path / "test.db")

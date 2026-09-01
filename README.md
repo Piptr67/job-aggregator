@@ -23,7 +23,7 @@ A lightweight Python application that fetches remote jobs from the Himalayas RSS
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Piptr67/job-aggregator.git
 cd job-aggregator
 ```
 

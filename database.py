@@ -1,5 +1,4 @@
 import sqlite3
-from dataclasses import asdict
 
 from job import Job
 
@@ -46,21 +45,44 @@ def get_connection(db_name: str = DB_NAME) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db(db_name: str = DB_NAME) -> None:
     with get_connection(db_name) as connection:
         connection.execute(CREATE_JOBS_TABLE_SQL)
 
+
 def save_jobs(jobs: list[Job], db_name: str = DB_NAME) -> int:
-    job_dicts = [asdict(job) for job in jobs]
+    job_dicts = [
+        {
+            "title": job.title,
+            "description": job.description,
+            "link": job.link,
+            "pub_date": job.pub_date,
+            "company": job.company,
+        }
+        for job in jobs
+    ]
+    
     with get_connection(db_name) as conn:
         cursor = conn.executemany(INSERT_JOBS_SQL, job_dicts)
         return cursor.rowcount
+
 
 def get_jobs(limit: int = 50, db_name: str = DB_NAME) -> list[Job]:
     with get_connection(db_name) as conn:
         rows = conn.execute(GET_JOBS_SQL, (limit,)).fetchall()
 
-    return [Job(**row) for row in rows]
+    return [
+        Job(
+            title=row["title"],
+            description=row["description"],
+            link=row["link"],
+            pub_date=row["pub_date"],
+            company=row["company"],
+        )
+        for row in rows
+    ]
+
 
 def search_jobs(query: str, limit: int = 50, db_name: str = DB_NAME) -> list[Job]:
     with get_connection(db_name) as conn:
@@ -69,4 +91,13 @@ def search_jobs(query: str, limit: int = 50, db_name: str = DB_NAME) -> list[Job
             {"query": f"%{query}%", "limit": limit},
         ).fetchall()
 
-    return [Job(**row) for row in rows]
+    return [
+        Job(
+            title=row["title"],
+            description=row["description"],
+            link=row["link"],
+            pub_date=row["pub_date"],
+            company=row["company"],
+        )
+        for row in rows
+    ]

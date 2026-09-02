@@ -2,6 +2,8 @@ import main
 from unittest.mock import Mock
 import pytest
 
+from job import Job
+
 def test_default_main(monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["main.py"])
 

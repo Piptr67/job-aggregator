@@ -14,8 +14,9 @@ class Source(ABC):
         pass
 
 class HimalayasSource(Source):
-    def __init__(self, url: str):
+    def __init__(self, url: str, timeout: int):
         self.url = url
+        self.timeout = timeout
         self.parser = HimalayasParser()
         
     def fetch(self) -> list[Job]:
@@ -41,6 +42,6 @@ class HimalayasSource(Source):
             return []
         
     def _fetch_url(self) -> requests.Response:
-        res = requests.get(self.url, timeout=10)
+        res = requests.get(self.url, timeout=self.timeout)
         res.raise_for_status()
         return res

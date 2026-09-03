@@ -2,8 +2,8 @@ import argparse
 
 from database import get_jobs, init_db, save_jobs, search_jobs
 from himalayas_source import HimalayasSource
+from config import Settings
 
-HIMALAYAS_RSS_URL = "https://himalayas.app/jobs/rss"
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Job aggregator")
@@ -14,22 +14,30 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    init_db()
+    settings = Settings.from_env()
+    
+    init_db(settings.database_path)
 
     if args.fetch:
-        source = HimalayasSource(HIMALAYAS_RSS_URL)
+        source = HimalayasSource(
+            settings.himalayas_rss_url, 
+            settings.fetch_timeout,
+        )
         jobs = source.fetch()
-        inserted = save_jobs(jobs)
+        inserted = save_jobs(jobs, settings.database_path)
 
         print(f"Fetched {len(jobs)} jobs")
         print(f"Inserted {inserted} new jobs")
         return
 
     if args.search:
-        saved_jobs = search_jobs(args.search)
+        saved_jobs = search_jobs(
+            args.search, settings.job_limit,
+            settings.database_path,
+        )
         print(f"\nJobs matching '{args.search}':")
     else:
-        saved_jobs = get_jobs() 
+        saved_jobs = get_jobs(settings.job_limit, settings.database_path) 
         print("\nLatest jobs:")
 
     if not saved_jobs:

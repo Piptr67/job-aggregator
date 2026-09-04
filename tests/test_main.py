@@ -25,7 +25,7 @@ def test_default_main(monkeypatch, capsys):
     assert "No jobs found." in captured.out
 
 
-def test_fetch_main(monkeypatch, capsys):
+def test_fetch_main(monkeypatch, caplog):
     monkeypatch.setattr("sys.argv", ["main.py", "--fetch"])
 
     mock_settings = Mock()
@@ -37,6 +37,7 @@ def test_fetch_main(monkeypatch, capsys):
     mock_settings.himalayas_rss_url = "https://test.example/rss"
     mock_settings.database_path = "jobs.db"
     mock_settings.fetch_timeout = 10
+    mock_settings.log_level = "INFO"
     mock_source_instance = mock_source.return_value
     mock_source_instance.fetch.return_value = []
     mock_save_jobs.return_value = 0
@@ -47,15 +48,14 @@ def test_fetch_main(monkeypatch, capsys):
     monkeypatch.setattr(main, "save_jobs", mock_save_jobs)   
 
     main.main()
-    captured = capsys.readouterr()
 
     mock_init_db.assert_called_once()
     mock_source.assert_called_once_with("https://test.example/rss", 10)
     mock_save_jobs.assert_called_once_with([], "jobs.db")
     mock_source_instance.fetch.assert_called_once()
 
-    assert "Fetched 0 jobs" in captured.out
-    assert "Inserted 0 new jobs" in captured.out
+    assert "Fetched 0 jobs" in caplog.text
+    assert "Inserted 0 new jobs" in caplog.text
 
 
 def test_search_main(monkeypatch, capsys):

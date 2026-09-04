@@ -4,3 +4,5 @@ __pycache__/
 jobs.db
 *.db
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/

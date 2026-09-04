@@ -1,7 +1,7 @@
 import sqlite3
 
-from job import Job
 from exceptions import DatabaseError
+from job import Job
 
 CREATE_JOBS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS jobs (

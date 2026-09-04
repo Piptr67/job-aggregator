@@ -1,10 +1,10 @@
 import argparse
 
-from database import get_jobs, init_db, save_jobs, search_jobs
-from himalayas_source import HimalayasSource
 from config import Settings
-from logger import setup_logger
+from database import get_jobs, init_db, save_jobs, search_jobs
 from exceptions import DatabaseError, FetchError, ParserError
+from himalayas_source import HimalayasSource
+from logger import setup_logger
 
 
 def main() -> None:
@@ -24,7 +24,7 @@ def main() -> None:
 
         if args.fetch:
             source = HimalayasSource(
-                settings.himalayas_rss_url, 
+                settings.himalayas_rss_url,
                 settings.fetch_timeout,
             )
             jobs = source.fetch()
@@ -36,18 +36,19 @@ def main() -> None:
 
         if args.search:
             saved_jobs = search_jobs(
-                args.search, settings.job_limit,
+                args.search,
+                settings.job_limit,
                 settings.database_path,
             )
             print(f"\nJobs matching '{args.search}':")
         else:
-            saved_jobs = get_jobs(settings.job_limit, settings.database_path) 
+            saved_jobs = get_jobs(settings.job_limit, settings.database_path)
             print("\nLatest jobs:")
 
         if not saved_jobs:
             print("No jobs found.")
             return
-        
+
         for job in saved_jobs:
             print(f"[{job.company}] {job.title}")
             print(job.link)

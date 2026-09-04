@@ -1,5 +1,6 @@
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -13,7 +14,9 @@ class Settings:
     def from_env(cls) -> "Settings":
         return cls(
             database_path=os.getenv("DATABASE_PATH", "jobs.db"),
-            himalayas_rss_url=os.getenv("HIMALAYAS_RSS_URL", "https://himalayas.app/jobs/rss"),
+            himalayas_rss_url=os.getenv(
+                "HIMALAYAS_RSS_URL", "https://himalayas.app/jobs/rss"
+            ),
             fetch_timeout=int(os.getenv("FETCH_TIMEOUT", "10")),
             job_limit=int(os.getenv("JOB_LIMIT", "50")),
             log_level=os.getenv("LOG_LEVEL", "INFO"),

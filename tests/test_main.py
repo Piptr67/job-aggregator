@@ -1,6 +1,9 @@
-import main
 from unittest.mock import Mock
+
 import pytest
+
+import main
+
 
 def test_default_main(monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["main.py"])
@@ -45,7 +48,7 @@ def test_fetch_main(monkeypatch, caplog):
     monkeypatch.setattr(main.Settings, "from_env", mock_settings_from_env)
     monkeypatch.setattr(main, "init_db", mock_init_db)
     monkeypatch.setattr(main, "HimalayasSource", mock_source)
-    monkeypatch.setattr(main, "save_jobs", mock_save_jobs)   
+    monkeypatch.setattr(main, "save_jobs", mock_save_jobs)
 
     main.main()
 
@@ -78,9 +81,9 @@ def test_search_main(monkeypatch, capsys):
     mock_search_jobs.assert_called_once_with("python", 50, "jobs.db")
     mock_source.assert_not_called()
 
-
     assert "Jobs matching 'python':" in captured.out
     assert "No jobs found." in captured.out
+
 
 def test_search_fetch_main(monkeypatch):
     monkeypatch.setattr("sys.argv", ["main.py", "--fetch", "--search", "python"])

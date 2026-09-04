@@ -1,16 +1,15 @@
 import logging
 import xml.etree.ElementTree as ET
 
-from job import Job
 from exceptions import ParserError
+from job import Job
 
 logger = logging.getLogger(__name__)
 
+
 class HimalayasParser:
     def __init__(self):
-        self.namespaces = {
-            "himalayas": "https://himalayas.app/ns/jobs"
-        }
+        self.namespaces = {"himalayas": "https://himalayas.app/ns/jobs"}
 
     def parse(self, content: bytes) -> list[Job]:
         items = self._extract_items(content)

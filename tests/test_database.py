@@ -1,4 +1,4 @@
-from database import init_db, save_jobs, get_jobs, search_jobs
+from database import get_jobs, init_db, save_jobs, search_jobs
 from job import Job
 
 

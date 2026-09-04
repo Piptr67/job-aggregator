@@ -1,4 +1,6 @@
 import sqlite3
+from collections.abc import Generator
+from contextlib import contextmanager
 
 from exceptions import DatabaseError
 from job import Job
@@ -39,11 +41,18 @@ ORDER BY id DESC
 LIMIT :limit;
 """
 
-
-def get_connection(db_name: str) -> sqlite3.Connection:
+@contextmanager
+def get_connection(db_name: str) -> Generator[sqlite3.Connection]:
     conn = sqlite3.connect(db_name)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db(db_name: str) -> None:

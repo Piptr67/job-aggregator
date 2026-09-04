@@ -2,6 +2,7 @@ import logging
 import xml.etree.ElementTree as ET
 
 from job import Job
+from exceptions import ParserError
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class HimalayasParser:
         try:
             root = ET.fromstring(content)
         except ET.ParseError as e:
-            raise ValueError(f"Malformed XML: {e}") from e
+            raise ParserError(f"Malformed XML: {e}") from e
 
         channel = root.find("channel")
         if channel is None:

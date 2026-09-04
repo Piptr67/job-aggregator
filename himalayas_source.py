@@ -5,6 +5,7 @@ import requests
 
 from job import Job
 from himalayas_parser import HimalayasParser
+from exceptions import FetchError
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class HimalayasSource(Source):
                 case _: 
                     msg = f"Unexpected request error for URL: {self.url}" 
             logger.error("%s | Details: %s", msg, e) 
-            return []
+            raise FetchError(msg) from e
         
         try:
             return self.parser.parse(response.content)

@@ -1,8 +1,7 @@
 import sqlite3
 
 from job import Job
-
-DB_NAME = "jobs.db"
+from exceptions import DatabaseError
 
 CREATE_JOBS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -40,18 +39,22 @@ ORDER BY id DESC
 LIMIT :limit;
 """
 
-def get_connection(db_name: str = DB_NAME) -> sqlite3.Connection:
+
+def get_connection(db_name: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_name)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def init_db(db_name: str = DB_NAME) -> None:
-    with get_connection(db_name) as connection:
-        connection.execute(CREATE_JOBS_TABLE_SQL)
+def init_db(db_name: str) -> None:
+    try:
+        with get_connection(db_name) as connection:
+            connection.execute(CREATE_JOBS_TABLE_SQL)
+    except sqlite3.Error as e:
+        raise DatabaseError(f"Failed to initialize database: {db_name}") from e
 
 
-def save_jobs(jobs: list[Job], db_name: str = DB_NAME) -> int:
+def save_jobs(jobs: list[Job], db_name: str) -> int:
     job_dicts = [
         {
             "title": job.title,
@@ -62,16 +65,20 @@ def save_jobs(jobs: list[Job], db_name: str = DB_NAME) -> int:
         }
         for job in jobs
     ]
-    
-    with get_connection(db_name) as conn:
-        cursor = conn.executemany(INSERT_JOBS_SQL, job_dicts)
-        return cursor.rowcount
+    try:
+        with get_connection(db_name) as conn:
+            cursor = conn.executemany(INSERT_JOBS_SQL, job_dicts)
+            return cursor.rowcount
+    except sqlite3.Error as e:
+        raise DatabaseError(f"Failed to save jobs to database: {db_name}") from e
 
 
-def get_jobs(limit: int = 50, db_name: str = DB_NAME) -> list[Job]:
-    with get_connection(db_name) as conn:
-        rows = conn.execute(GET_JOBS_SQL, (limit,)).fetchall()
-
+def get_jobs(limit: int, db_name: str) -> list[Job]:
+    try:
+        with get_connection(db_name) as conn:
+            rows = conn.execute(GET_JOBS_SQL, (limit,)).fetchall()
+    except sqlite3.Error as e:
+        raise DatabaseError(f"Failed to search jobs in database: {db_name}") from e
     return [
         Job(
             title=row["title"],
@@ -84,12 +91,15 @@ def get_jobs(limit: int = 50, db_name: str = DB_NAME) -> list[Job]:
     ]
 
 
-def search_jobs(query: str, limit: int = 50, db_name: str = DB_NAME) -> list[Job]:
-    with get_connection(db_name) as conn:
-        rows = conn.execute(
-            SEARCH_JOBS_SQL,
-            {"query": f"%{query}%", "limit": limit},
-        ).fetchall()
+def search_jobs(query: str, limit: int, db_name: str) -> list[Job]:
+    try:
+        with get_connection(db_name) as conn:
+            rows = conn.execute(
+                SEARCH_JOBS_SQL,
+                {"query": f"%{query}%", "limit": limit},
+            ).fetchall()
+    except sqlite3.Error as e:
+        raise DatabaseError(f"Failed to get search jobs in database: {db_name}") from e
 
     return [
         Job(

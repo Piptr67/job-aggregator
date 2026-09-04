@@ -1,5 +1,6 @@
 import pytest
 from himalayas_parser import HimalayasParser
+from exceptions import ParserError
 
 
 def test_parse_job():
@@ -37,7 +38,7 @@ def test_parse_malformed_xml():
     parser = HimalayasParser()
     content = b"<rss><channel>"
 
-    with pytest.raises(ValueError, match="Malformed XML"):
+    with pytest.raises(ParserError, match="Malformed XML"):
         parser.parse(content)
 
 
@@ -108,7 +109,7 @@ def test_parse_empty_feed():
 def test_parse_empty_content():
     parser = HimalayasParser()
 
-    with pytest.raises(ValueError, match="Malformed XML"):
+    with pytest.raises(ParserError, match="Malformed XML"):
         parser.parse(b"")
 
 

@@ -36,7 +36,7 @@ def test_parse_and_save_jobs(tmp_path):
     jobs = parser.parse(content)
 
     inserted = save_jobs(jobs, db_name)
-    saved_jobs = get_jobs(db_name=db_name)
+    saved_jobs = get_jobs(50, db_name)
 
     assert inserted == 2
     assert len(saved_jobs) == 2

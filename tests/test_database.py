@@ -73,7 +73,7 @@ def test_get_jobs(tmp_path):
 
     save_jobs(jobs, db_name)
 
-    saved_jobs = get_jobs(db_name=db_name)
+    saved_jobs = get_jobs(50, db_name)
 
     assert len(saved_jobs) == 2
     assert saved_jobs[0].title == "Frontend Developer"
@@ -104,7 +104,7 @@ def test_search_jobs(tmp_path):
 
     save_jobs(jobs, db_name)
 
-    results = search_jobs("python", db_name=db_name)
+    results = search_jobs("python", 50, db_name)
 
     assert len(results) == 1
     assert results[0].title == "Python Backend Engineer"
@@ -127,7 +127,7 @@ def test_search_jobs_is_case_insensitive(tmp_path):
 
     save_jobs(jobs, db_name)
 
-    results = search_jobs("PYTHON", db_name=db_name)
+    results = search_jobs("PYTHON", 50, db_name)
 
     assert len(results) == 1
     assert results[0].title == "Python Backend Engineer"
@@ -157,8 +157,8 @@ def test_search_jobs_across_fields(tmp_path):
 
     save_jobs(jobs, db_name)
 
-    description_results = search_jobs("Python applications", db_name=db_name)
-    company_results = search_jobs("Python Corp", db_name=db_name)
+    description_results = search_jobs("Python applications", 50, db_name)
+    company_results = search_jobs("Python Corp", 50, db_name)
 
     assert len(description_results) == 1
     assert description_results[0].company == "Acme"

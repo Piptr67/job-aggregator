@@ -66,7 +66,7 @@ def test_parse_missing_channel():
     parser = HimalayasParser()
     content = b"<rss></rss>"
 
-    with pytest.raises(ValueError, match="RSS feed is missing channel"):
+    with pytest.raises(ParserError, match="RSS feed is missing channel"):
         parser.parse(content)
 
 

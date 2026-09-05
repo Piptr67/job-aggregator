@@ -1,19 +1,13 @@
 import logging
-from abc import ABC, abstractmethod
 
 import requests
 
-from exceptions import FetchError
+from exceptions import FetchError, ParserError
 from himalayas_parser import HimalayasParser
 from job import Job
+from source import Source
 
 logger = logging.getLogger(__name__)
-
-
-class Source(ABC):
-    @abstractmethod
-    def fetch(self) -> list[Job]:
-        pass
 
 
 class HimalayasSource(Source):
@@ -40,9 +34,9 @@ class HimalayasSource(Source):
 
         try:
             return self.parser.parse(response.content)
-        except ValueError as e:
+        except ParserError as e:
             logger.error("Invalid RSS feed from URL: %s: %s", self.url, e)
-            return []
+            raise
 
     def _fetch_url(self) -> requests.Response:
         res = requests.get(self.url, timeout=self.timeout)

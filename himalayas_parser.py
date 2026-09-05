@@ -31,7 +31,7 @@ class HimalayasParser:
 
         channel = root.find("channel")
         if channel is None:
-            raise ValueError("RSS feed is missing channel")
+            raise ParserError("RSS feed is missing channel")
 
         return channel.findall("item")
 

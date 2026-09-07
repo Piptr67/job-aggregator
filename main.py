@@ -3,8 +3,8 @@ import argparse
 from config import Settings
 from database import get_jobs, init_db, save_jobs, search_jobs
 from exceptions import DatabaseError, FetchError, ParserError
-from himalayas_source import HimalayasSource
 from logger import setup_logger
+from sources.himalayas.source import HimalayasSource
 
 
 def main() -> None:

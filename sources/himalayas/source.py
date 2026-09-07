@@ -3,9 +3,9 @@ import logging
 import requests
 
 from exceptions import FetchError, ParserError
-from himalayas_parser import HimalayasParser
 from job import Job
-from source import Source
+from sources.himalayas.parser import HimalayasParser
+from sources.source import Source
 
 logger = logging.getLogger(__name__)
 

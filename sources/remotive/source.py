@@ -1,7 +1,8 @@
 import requests
+from sources.source import Source
 
 from job import Job
-from source import Source
+
 
 class RemotiveSource(Source):
     def __init__(self, url: str, timeout: int):

@@ -1,5 +1,5 @@
 from database import get_jobs, init_db, save_jobs
-from himalayas_parser import HimalayasParser
+from sources.himalayas.parser import HimalayasParser
 
 
 def test_parse_and_save_jobs(tmp_path):

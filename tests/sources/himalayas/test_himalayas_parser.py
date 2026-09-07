@@ -1,7 +1,7 @@
 import pytest
 
 from exceptions import ParserError
-from himalayas_parser import HimalayasParser
+from sources.himalayas.parser import HimalayasParser
 
 
 def test_parse_job():

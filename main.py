@@ -4,7 +4,7 @@ from config import Settings
 from database import get_jobs, init_db, save_jobs, search_jobs
 from exceptions import DatabaseError, FetchError, ParserError
 from logger import setup_logger
-from sources.himalayas.source import HimalayasSource
+from sources.factory import get_sources
 
 
 def main() -> None:
@@ -23,15 +23,14 @@ def main() -> None:
         init_db(settings.database_path)
 
         if args.fetch:
-            source = HimalayasSource(
-                settings.himalayas_rss_url,
-                settings.fetch_timeout,
-            )
-            jobs = source.fetch()
-            inserted = save_jobs(jobs, settings.database_path)
+            sources = get_sources(settings)
 
-            logger.info("Fetched %d jobs", len(jobs))
-            logger.info("Inserted %d new jobs", inserted)
+            for source in sources:
+                jobs = source.fetch()
+                inserted = save_jobs(jobs, settings.database_path)
+
+                logger.info("Fetched %d jobs", len(jobs))
+                logger.info("Inserted %d new jobs", inserted)
             return
 
         if args.search:

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class Settings:
     database_path: str
     himalayas_rss_url: str
+    remotive_api_url: str
     fetch_timeout: int
     job_limit: int
     log_level: str
@@ -16,6 +17,9 @@ class Settings:
             database_path=os.getenv("DATABASE_PATH", "jobs.db"),
             himalayas_rss_url=os.getenv(
                 "HIMALAYAS_RSS_URL", "https://himalayas.app/jobs/rss"
+            ),
+            remotive_api_url=os.getenv(
+               "REMOTIVE_API_URL", "https://remotive.com/api/remote-jobs"
             ),
             fetch_timeout=int(os.getenv("FETCH_TIMEOUT", "10")),
             job_limit=int(os.getenv("JOB_LIMIT", "50")),

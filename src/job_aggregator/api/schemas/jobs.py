@@ -8,5 +8,6 @@ class JobSummary(BaseModel):
     location: str | None = None
     work_mode: str | None = None
 
+
 class JobsResponse(BaseModel):
     jobs: list[JobSummary]

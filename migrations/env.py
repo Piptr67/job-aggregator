@@ -6,10 +6,10 @@ from sqlalchemy import pool
 from alembic import context
 
 from job_aggregator.db.base import Base
-from job_aggregator.db.models.job import Job
+from job_aggregator.db.models.job import Job  # noqa: F401
 from job_aggregator.core.config import Settings
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

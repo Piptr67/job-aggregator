@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -25,3 +25,20 @@ def get_jobs(db: Session = Depends(get_db)) -> JobsResponse:
     ]
 
     return JobsResponse(jobs=jobs)
+
+
+@router.get("/{job_id}", response_model=JobSummary)
+def get_job(job_id: int, db: Session = Depends(get_db)) -> JobSummary:
+    result = db.scalars(select(Job).where(Job.id == job_id)).one_or_none()
+    if result is None:
+        raise HTTPException(status_code=404)
+
+    job = JobSummary(
+        id=result.id,
+        title=result.title,
+        company=result.company,
+        location=result.location,
+        work_mode=result.work_mode,
+    )
+
+    return job

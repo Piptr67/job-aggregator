@@ -24,9 +24,6 @@ def test_get_jobs(db_session):
     db_session.commit()
 
     response = client.get("/api/v1/jobs")
-    assert response.status_code == 200
-
-    response = client.get("/api/v1/jobs")
 
     assert response.status_code == 200
 
@@ -41,3 +38,45 @@ def test_get_jobs(db_session):
             "work_mode": None,
         }
     ]
+
+
+def test_get_job(db_session):
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    job = Job(
+        title="Test Python Developer",
+        company="Test Company",
+        url="https://example.com/test-python-developer-2",
+        source="test",
+    )
+
+    db_session.add(job)
+    db_session.commit()
+
+    response = client.get(f"/api/v1/jobs/{job.id}")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data == {
+        "id": job.id,
+        "title": "Test Python Developer",
+        "company": "Test Company",
+        "location": None,
+        "work_mode": None,
+    }
+
+
+def test_get_job_not_found(db_session):
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    response = client.get("/api/v1/jobs/999999")
+
+    assert response.status_code == 404

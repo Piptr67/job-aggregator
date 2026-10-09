@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from job_aggregator.db.models.job import Job
-from job_aggregator.ingestion.himalayas import ParsedJob
+from job_aggregator.ingestion.himalayas import ParsedJob, fetch_feed, parse_jobs
 
 
 def save_job(db: Session, parsed_job: ParsedJob) -> Job:
@@ -26,3 +26,13 @@ def save_job(db: Session, parsed_job: ParsedJob) -> Job:
     db.refresh(job)
 
     return job
+
+
+def ingest_himalayas(db: Session) -> int:
+    feed = fetch_feed()
+    parsed_jobs = parse_jobs(feed)
+
+    for job in parsed_jobs:
+        save_job(db, job)
+
+    return len(parsed_jobs)

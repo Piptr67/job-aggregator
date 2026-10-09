@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from job_aggregator.api.schemas.jobs import JobsResponse, JobSummary
@@ -11,15 +11,36 @@ router = APIRouter(prefix="/jobs")
 
 
 @router.get("", response_model=JobsResponse)
-def get_jobs(db: Session = Depends(get_db)) -> JobsResponse:
-    result = db.scalars(select(Job)).all()
+def get_jobs(
+    location: str | None = None,
+    company: str | None = None,
+    q: str | None = None,
+    db: Session = Depends(get_db),
+) -> JobsResponse:
+    query = select(Job)
+
+    if location:
+        query = query.where(Job.location.ilike(f"%{location}%"))
+
+    if company:
+        query = query.where(Job.company.ilike(f"%{company}%"))
+
+    if q:
+        query = query.where(
+            or_(
+                Job.title.ilike(f"%{q}%"),
+                Job.company.ilike(f"%{q}%"),
+                Job.description.ilike(f"%{q}%"),
+            )
+        )
+
+    result = db.scalars(query).all()
     jobs = [
         JobSummary(
             id=job.id,
             title=job.title,
             company=job.company,
             location=job.location,
-            work_mode=job.work_mode,
         )
         for job in result
     ]
@@ -38,7 +59,6 @@ def get_job(job_id: int, db: Session = Depends(get_db)) -> JobSummary:
         title=result.title,
         company=result.company,
         location=result.location,
-        work_mode=result.work_mode,
     )
 
     return job

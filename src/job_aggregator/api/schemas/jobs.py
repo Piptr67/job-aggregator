@@ -6,7 +6,6 @@ class JobSummary(BaseModel):
     title: str
     company: str
     location: str | None = None
-    work_mode: str | None = None
 
 
 class JobsResponse(BaseModel):

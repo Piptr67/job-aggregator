@@ -35,7 +35,6 @@ def test_get_jobs(db_session):
             "title": "Test Python Developer",
             "company": "Test Company",
             "location": None,
-            "work_mode": None,
         }
     ]
 
@@ -67,7 +66,6 @@ def test_get_job(db_session):
         "title": "Test Python Developer",
         "company": "Test Company",
         "location": None,
-        "work_mode": None,
     }
 
 

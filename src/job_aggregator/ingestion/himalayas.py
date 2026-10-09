@@ -14,7 +14,7 @@ NAMESPACES = {
 
 
 def fetch_feed() -> str:
-    response = requests.get(settings.himalayas_rss_url)
+    response = requests.get(settings.himalayas_rss_url, timeout=10)
     response.raise_for_status()
     return response.text
 

@@ -1,3 +1,7 @@
+import pytest
+import requests
+
+from job_aggregator.ingestion import himalayas
 from job_aggregator.ingestion.himalayas import parse_jobs
 
 
@@ -78,3 +82,46 @@ def test_parse_published_at_missing():
 
     assert len(jobs) == 1
     assert jobs[0]["published_at"] is None
+
+
+def test_fetch_feed(monkeypatch):
+    class FakeResponse:
+        text = "<rss>test feed</rss>"
+
+        def raise_for_status(self):
+            pass
+
+    def fake_get(url, timeout):
+        assert url == himalayas.settings.himalayas_rss_url
+        assert timeout == 10
+        return FakeResponse()
+
+    monkeypatch.setattr(himalayas.requests, "get", fake_get)
+
+    feed = himalayas.fetch_feed()
+
+    assert feed == "<rss>test feed</rss>"
+
+
+def test_fetch_feed_error(monkeypatch):
+    class FakeResponse:
+        def raise_for_status(self):
+            raise requests.HTTPError("500 Server Error")
+
+    def fake_get(url, timeout):
+        return FakeResponse()
+
+    monkeypatch.setattr(himalayas.requests, "get", fake_get)
+
+    with pytest.raises(requests.HTTPError):
+        himalayas.fetch_feed()
+
+
+def test_fetch_feed_timeout(monkeypatch):
+    def fake_get(url, timeout):
+        raise requests.Timeout("Request timed out")
+
+    monkeypatch.setattr(himalayas.requests, "get", fake_get)
+
+    with pytest.raises(requests.Timeout):
+        himalayas.fetch_feed()

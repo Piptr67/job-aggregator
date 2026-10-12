@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Literal
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -17,6 +18,8 @@ def get_jobs(
     q: str | None = None,
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    sort_by: Literal["published_at", "title", "company"] = "published_at",
+    order: Literal["asc", "desc"] = "desc",
     db: Session = Depends(get_db),
 ) -> JobsResponse:
     query = select(Job)
@@ -36,7 +39,21 @@ def get_jobs(
             )
         )
 
-    query = query.order_by(Job.id).limit(limit).offset(offset)
+    sort_columns = {
+        "published_at": Job.published_at,
+        "title": Job.title,
+        "company": Job.company,
+    }
+
+    sort_column = sort_columns[sort_by]
+
+    if order == "desc":
+        query = query.order_by(sort_column.desc().nulls_last(), Job.id.asc())
+    else:
+        query = query.order_by(sort_column.asc().nulls_last(), Job.id.asc())
+
+    query = query.limit(limit).offset(offset)
+
     result = db.scalars(query).all()
     jobs = [
         JobSummary(

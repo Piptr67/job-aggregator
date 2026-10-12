@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -15,6 +15,8 @@ def get_jobs(
     location: str | None = None,
     company: str | None = None,
     q: str | None = None,
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> JobsResponse:
     query = select(Job)
@@ -34,6 +36,7 @@ def get_jobs(
             )
         )
 
+    query = query.order_by(Job.id).limit(limit).offset(offset)
     result = db.scalars(query).all()
     jobs = [
         JobSummary(

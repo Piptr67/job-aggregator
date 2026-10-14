@@ -1,8 +1,12 @@
 from sqlalchemy import select
 
-from job_aggregator.ingestion import service
-from job_aggregator.ingestion.service import ingest_himalayas, save_job
 from job_aggregator.db.models.job import Job
+from job_aggregator.ingestion import service
+from job_aggregator.ingestion.service import (
+    ingest_arbeitnow,
+    ingest_himalayas,
+    save_job,
+)
 
 
 def test_save_job(db_session):
@@ -16,8 +20,9 @@ def test_save_job(db_session):
         "published_at": None,
     }
 
-    job = save_job(db_session, parsed_job)
+    job, inserted = save_job(db_session, parsed_job)
 
+    assert inserted is True
     assert job.id is not None
     assert job.title == "Python Developer"
     assert job.company == "Example Tech"
@@ -39,13 +44,14 @@ def test_save_job_duplicate_url(db_session):
         "published_at": None,
     }
 
-    first_job = save_job(db_session, parsed_job)
-    second_job = save_job(db_session, parsed_job)
+    first_job, first_inserted = save_job(db_session, parsed_job)
+    second_job, second_inserted = save_job(db_session, parsed_job)
 
+    assert first_inserted is True
+    assert second_inserted is False
     assert first_job.id == second_job.id
 
     jobs = db_session.scalars(select(Job)).all()
-
     assert len(jobs) == 1
 
 
@@ -74,7 +80,7 @@ def test_ingest_himalayas(db_session, monkeypatch):
     ]
 
     monkeypatch.setattr(service, "fetch_feed", lambda: feed)
-    monkeypatch.setattr(service, "parse_jobs", lambda _: parsed_jobs)
+    monkeypatch.setattr(service, "parse_himalayas_jobs", lambda _: parsed_jobs)
 
     job_count = ingest_himalayas(db_session)
 
@@ -82,3 +88,39 @@ def test_ingest_himalayas(db_session, monkeypatch):
 
     jobs = db_session.scalars(select(Job)).all()
     assert len(jobs) == 2
+
+
+def test_ingest_arbeitnow(db_session, monkeypatch):
+    data = {"data": [{"title": "Python Developer"}]}
+
+    parsed_jobs: list[service.ParsedJob] = [
+        {
+            "title": "Python Developer",
+            "company": "Example Tech",
+            "description": "Build Python applications.",
+            "location": "Poland",
+            "url": "https://arbeitnow.com/jobs/python-dev",
+            "source": "arbeitnow",
+            "published_at": None,
+        },
+        {
+            "title": "Backend Engineer",
+            "company": "Another Tech",
+            "description": "Build backend systems.",
+            "location": "Germany",
+            "url": "https://arbeitnow.com/jobs/backend-eng",
+            "source": "arbeitnow",
+            "published_at": None,
+        },
+    ]
+
+    monkeypatch.setattr(service, "fetch_arbeitnow_jobs", lambda: data)
+    monkeypatch.setattr(service, "parse_arbeitnow_jobs", lambda _: parsed_jobs)
+
+    job_count = ingest_arbeitnow(db_session)
+
+    assert job_count == 2
+
+    jobs = db_session.scalars(select(Job)).all()
+    assert len(jobs) == 2
+    assert all(job.source == "arbeitnow" for job in jobs)

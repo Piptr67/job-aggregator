@@ -18,7 +18,7 @@ def get_jobs(
     q: str | None = None,
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    sort_by: Literal["published_at", "title", "company"] = "published_at",
+    sort_by: Literal["published_at", "title", "company", "id"] = "published_at",
     order: Literal["asc", "desc"] = "desc",
     db: Session = Depends(get_db),
 ) -> JobsResponse:
@@ -43,6 +43,7 @@ def get_jobs(
         "published_at": Job.published_at,
         "title": Job.title,
         "company": Job.company,
+        "id": Job.id,
     }
 
     sort_column = sort_columns[sort_by]

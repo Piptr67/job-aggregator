@@ -3,9 +3,9 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 import requests
-from typing import TypedDict
 
 from job_aggregator.core.config import settings
+from job_aggregator.ingestion.schemas import ParsedJob
 
 NAMESPACES = {
     "himalayas": "https://himalayas.app/ns/jobs",
@@ -21,16 +21,6 @@ def fetch_feed() -> str:
 
 def parse_feed(feed: str) -> ET.Element:
     return ET.fromstring(feed)
-
-
-class ParsedJob(TypedDict):
-    title: str | None
-    company: str | None
-    description: str | None
-    location: str | None
-    url: str | None
-    source: str
-    published_at: datetime | None
 
 
 def parse_jobs(feed: str) -> list[ParsedJob]:

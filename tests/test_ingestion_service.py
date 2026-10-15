@@ -55,6 +55,42 @@ def test_save_job_duplicate_url(db_session):
     assert len(jobs) == 1
 
 
+def test_save_jobs_skips_invalid_job(db_session, caplog):
+    valid_job_1: service.ParsedJob = {
+        "title": "Python Developer",
+        "company": "Example Tech",
+        "description": "Build Python applications.",
+        "location": "Poland",
+        "url": "https://example.com/python",
+        "source": "himalayas",
+        "published_at": None,
+    }
+    invalid_job = {
+        **valid_job_1,
+        "title": "X" * 300,
+        "url": "https://example.com/invalid",
+    }
+    valid_job_2 = {
+        **valid_job_1,
+        "title": "Backend Engineer",
+        "url": "https://example.com/backend",
+    }
+
+    inserted_count = service.save_jobs(
+        db_session,
+        [valid_job_1, invalid_job, valid_job_2],
+    )
+
+    saved_jobs = db_session.scalars(select(Job)).all()
+
+    assert inserted_count == 2
+    assert len(saved_jobs) == 2
+    assert {job.url for job in saved_jobs} == {
+        "https://example.com/python",
+        "https://example.com/backend",
+    }
+
+
 def test_ingest_himalayas(db_session, monkeypatch):
     feed = "<rss>dummy</rss>"
 

@@ -1,4 +1,7 @@
+import logging
+
 from sqlalchemy import select
+from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm import Session
 
 from job_aggregator.db.models.job import Job
@@ -11,6 +14,8 @@ from job_aggregator.ingestion.arbeitnow import (
     fetch_jobs as fetch_arbeitnow_jobs,
     parse_jobs as parse_arbeitnow_jobs,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def save_job(db: Session, parsed_job: ParsedJob) -> tuple[Job, bool]:
@@ -36,11 +41,23 @@ def save_job(db: Session, parsed_job: ParsedJob) -> tuple[Job, bool]:
 
 def save_jobs(db: Session, jobs: list[ParsedJob]) -> int:
     inserted_count = 0
+
     try:
         for job in jobs:
-            inserted = save_job(db, job)[1]
-            if inserted:
-                inserted_count += 1
+            try:
+                with db.begin_nested():
+                    inserted = save_job(db, job)[1]
+
+                if inserted:
+                    inserted_count += 1
+
+            except (IntegrityError, DataError):
+                logger.warning(
+                    "Skipping invalid job with URL %s",
+                    job["url"],
+                    exc_info=True,
+                )
+
         db.commit()
     except Exception:
         db.rollback()

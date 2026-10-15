@@ -30,18 +30,21 @@ def save_job(db: Session, parsed_job: ParsedJob) -> tuple[Job, bool]:
     )
 
     db.add(job)
-    db.commit()
-    db.refresh(job)
-
+    db.flush()
     return job, True
 
 
 def save_jobs(db: Session, jobs: list[ParsedJob]) -> int:
     inserted_count = 0
-    for job in jobs:
-        inserted = save_job(db, job)[1]
-        if inserted:
-            inserted_count += 1
+    try:
+        for job in jobs:
+            inserted = save_job(db, job)[1]
+            if inserted:
+                inserted_count += 1
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
     return inserted_count
 

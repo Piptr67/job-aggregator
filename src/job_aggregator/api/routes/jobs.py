@@ -11,7 +11,7 @@ from job_aggregator.db.models.job import Job
 router = APIRouter(prefix="/jobs")
 
 
-@router.get("", response_model=JobsResponse)
+@router.get("", response_model=JobsResponse, dependencies=[Depends(get_current_user)])
 def get_jobs(
     location: str | None = None,
     company: str | None = None,
@@ -21,7 +21,6 @@ def get_jobs(
     sort_by: Literal["published_at", "title", "company", "id"] = "published_at",
     order: Literal["asc", "desc"] = "desc",
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user),
 ) -> JobsResponse:
     query = select(Job)
 

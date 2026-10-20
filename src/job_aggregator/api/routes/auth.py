@@ -1,7 +1,6 @@
 import jwt
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,8 +11,13 @@ from job_aggregator.api.schemas.auth import (
     RegisterRequest,
     UserResponse,
 )
+from job_aggregator.core.email import send_verification_email
 from job_aggregator.core.passwords import hash_password, verify_password
-from job_aggregator.core.security import create_access_token, decode_verification_token
+from job_aggregator.core.security import (
+    create_access_token,
+    decode_verification_token,
+    create_verification_token,
+)
 from job_aggregator.db.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -61,6 +65,9 @@ def register(
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    verification_token = create_verification_token(user.email)
+    send_verification_email(user.email, verification_token)
 
     return UserResponse(id=user.id, email=user.email)
 

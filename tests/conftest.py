@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 from pydantic_settings import BaseSettings
 import pytest
@@ -54,4 +55,8 @@ def client(db_session):
     with TestClient(app) as test_client:
         yield test_client
 
-    app.dependency_overrides.clear()
+
+@pytest.fixture(autouse=True)
+def mock_verification_email():
+    with patch("job_aggregator.api.routes.auth.send_verification_email") as mock_send:
+        yield mock_send

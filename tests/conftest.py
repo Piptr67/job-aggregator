@@ -1,8 +1,13 @@
+from fastapi.testclient import TestClient
+from unittest.mock import patch
+
 from pydantic_settings import BaseSettings
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from job_aggregator.api.dependencies import get_db
 from job_aggregator.db.models.job import Job
+from job_aggregator.db.models.user import User
 from job_aggregator.main import app
 
 
@@ -29,6 +34,7 @@ def db_session():
     finally:
         db.rollback()
         db.query(Job).delete()
+        db.query(User).delete()
         db.commit()
         db.close()
 
@@ -37,3 +43,20 @@ def db_session():
 def clear_overrides():
     yield
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(db_session):
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture(autouse=True)
+def mock_verification_email():
+    with patch("job_aggregator.api.routes.auth.send_verification_email") as mock_send:
+        yield mock_send

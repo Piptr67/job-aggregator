@@ -1,4 +1,7 @@
+import jwt
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,7 +13,7 @@ from job_aggregator.api.schemas.auth import (
     UserResponse,
 )
 from job_aggregator.core.passwords import hash_password, verify_password
-from job_aggregator.core.security import create_access_token
+from job_aggregator.core.security import create_access_token, decode_verification_token
 from job_aggregator.db.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -25,6 +28,12 @@ def login(credentials: TokenRequest, db: Session = Depends(get_db)) -> TokenResp
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before logging in",
         )
 
     access_token = create_access_token(subject=str(user.id))
@@ -54,3 +63,33 @@ def register(
     db.refresh(user)
 
     return UserResponse(id=user.id, email=user.email)
+
+
+@router.get("/verify-email")
+def verify_email(
+    token: str,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    try:
+        email = decode_verification_token(token)
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification link",
+        ) from None
+
+    user = db.query(User).filter(User.email == email).first()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification link",
+        )
+
+    if user.is_verified:
+        return {"message": "Email already verified"}
+
+    user.is_verified = True
+    db.commit()
+
+    return {"message": "Email verified successfully"}

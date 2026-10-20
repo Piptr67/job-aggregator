@@ -1,7 +1,10 @@
+from fastapi.testclient import TestClient
+
 from pydantic_settings import BaseSettings
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from job_aggregator.api.dependencies import get_db
 from job_aggregator.db.models.job import Job
 from job_aggregator.db.models.user import User
 from job_aggregator.main import app
@@ -38,4 +41,17 @@ def db_session():
 @pytest.fixture(autouse=True)
 def clear_overrides():
     yield
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(db_session):
+    def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    with TestClient(app) as test_client:
+        yield test_client
+
     app.dependency_overrides.clear()

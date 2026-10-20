@@ -1,7 +1,13 @@
+import time
+
 from fastapi.testclient import TestClient
+import jwt
 from sqlalchemy import select
 
 from job_aggregator.api.dependencies import get_db
+from job_aggregator.core.config import settings
+from job_aggregator.core.security import create_verification_token, create_access_token
+from job_aggregator.core.passwords import hash_password
 from job_aggregator.db.models.user import User
 from job_aggregator.main import app
 
@@ -68,6 +74,13 @@ def test_login_success(db_session):
     )
     assert registration_response.status_code == 201
 
+    user = db_session.scalar(
+    select(User).where(User.email == "login@example.com")
+    )
+    assert user is not None
+    user.is_verified = True
+    db_session.commit()
+
     response = client.post(
         "/api/v1/auth/token",
         json={
@@ -121,3 +134,93 @@ def test_login_unknown_email():
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Incorrect email or password"
+
+
+def test_verify_email(client, db_session):
+    user = User(
+        email="verify@example.com",
+        hashed_password="test-hash",
+        is_verified=False,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    token = create_verification_token(user.email)
+
+    response = client.get(
+        "/api/v1/auth/verify-email",
+        params={"token": token},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "message": "Email verified successfully"
+    }
+
+    db_session.refresh(user)
+    assert user.is_verified is True
+
+
+def test_verify_email_invalid_token(client):
+    response = client.get(
+        "/api/v1/auth/verify-email",
+        params={"token": "not-a-valid-token"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid or expired verification link"
+
+
+def test_verify_email_rejects_access_token(client):
+    token = create_access_token("verify@example.com")
+
+    response = client.get(
+        "/api/v1/auth/verify-email",
+        params={"token": token},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid or expired verification link"
+
+
+def test_verify_email_expired_token(client):
+    token = jwt.encode(
+        {
+            "sub": "verify@example.com",
+            "purpose": "email_verification",
+            "exp": int(time.time()) - 60,
+        },
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+    response = client.get(
+        "/api/v1/auth/verify-email",
+        params={"token": token},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid or expired verification link"
+
+
+def test_login_unverified_user(client, db_session):
+    user = User(
+        email="unverified@example.com",
+        hashed_password=hash_password("correct-password"),
+        is_verified=False,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    response = client.post(
+        "/api/v1/auth/token",
+        json={
+            "email": "unverified@example.com",
+            "password": "correct-password",
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == (
+        "Please verify your email before logging in"
+    )

@@ -17,8 +17,6 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: job_aggregator_test
-          RESEND_API_KEY: "ci-placeholder"
-          EMAIL_FROM: "onboarding@resend.dev"
         ports:
           - 5432:5432
         options: >-
@@ -33,6 +31,8 @@ jobs:
       HIMALAYAS_RSS_URL: "https://himalayas.app/jobs/rss"
       ARBEITNOW_JSON_URL: "https://www.arbeitnow.com/api/job-board-api"
       JWT_SECRET_KEY: "ci-only-test-secret-not-for-production"
+      RESEND_API_KEY: "ci-placeholder"
+      EMAIL_FROM: "onboarding@resend.dev"
 
     steps:
       - name: Check out repository

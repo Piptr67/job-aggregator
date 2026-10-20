@@ -17,6 +17,8 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: job_aggregator_test
+          RESEND_API_KEY: "ci-placeholder"
+          EMAIL_FROM: "onboarding@resend.dev"
         ports:
           - 5432:5432
         options: >-

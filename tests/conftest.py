@@ -3,6 +3,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from job_aggregator.db.models.job import Job
+from job_aggregator.db.models.user import User
 from job_aggregator.main import app
 
 
@@ -29,6 +30,7 @@ def db_session():
     finally:
         db.rollback()
         db.query(Job).delete()
+        db.query(User).delete()
         db.commit()
         db.close()
 

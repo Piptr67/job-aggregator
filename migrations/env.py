@@ -1,15 +1,13 @@
+import os
 from logging.config import fileConfig
 
-from sqlalchemy import create_engine
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import create_engine, pool
 
+from job_aggregator.core.config import settings
 from job_aggregator.db.base import Base
 from job_aggregator.db.models.job import Job  # noqa: F401
-from job_aggregator.core.config import Settings
-
-settings = Settings()  # type: ignore[call-arg]
+from job_aggregator.db.models.user import User  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -63,7 +61,8 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = create_engine(settings.database_url, poolclass=pool.NullPool)
+    database_url = os.getenv("DATABASE_URL", settings.database_url)
+    connectable = create_engine(database_url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

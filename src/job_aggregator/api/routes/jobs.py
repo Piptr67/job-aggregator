@@ -5,13 +5,13 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from job_aggregator.api.schemas.jobs import JobsResponse, JobSummary
-from job_aggregator.api.dependencies import get_db
+from job_aggregator.api.dependencies import get_db, get_current_user
 from job_aggregator.db.models.job import Job
 
 router = APIRouter(prefix="/jobs")
 
 
-@router.get("", response_model=JobsResponse)
+@router.get("", response_model=JobsResponse, dependencies=[Depends(get_current_user)])
 def get_jobs(
     location: str | None = None,
     company: str | None = None,

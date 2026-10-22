@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     resend_api_key: str
     email_from: str
 
+    google_client_id: str
+
     model_config = {
         "env_file": ".env",
     }

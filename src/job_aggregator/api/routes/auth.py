@@ -1,17 +1,20 @@
 import jwt
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from google.auth.exceptions import GoogleAuthError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from job_aggregator.api.dependencies import get_db
 from job_aggregator.api.schemas.auth import (
+    GoogleLoginRequest,
     TokenResponse,
     TokenRequest,
     RegisterRequest,
     UserResponse,
 )
 from job_aggregator.core.email import send_verification_email
+from job_aggregator.core.google_auth import verify_google_token
 from job_aggregator.core.passwords import hash_password, verify_password
 from job_aggregator.core.security import (
     create_access_token,
@@ -27,7 +30,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def login(credentials: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
     user = db.scalars(select(User).where(User.email == credentials.email)).one_or_none()
 
-    if user is None or not verify_password(credentials.password, user.hashed_password):
+    if (
+        user is None
+        or user.hashed_password is None
+        or not verify_password(credentials.password, user.hashed_password)
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -100,3 +107,42 @@ def verify_email(
     db.commit()
 
     return {"message": "Email verified successfully"}
+
+
+@router.post("/google", response_model=TokenResponse)
+def google_login(
+    credentials: GoogleLoginRequest, db: Session = Depends(get_db)
+) -> TokenResponse:
+    try:
+        google_user = verify_google_token(credentials.id_token)
+    except (ValueError, GoogleAuthError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google ID token"
+        ) from None
+
+    email = google_user.get("email")
+
+    if not isinstance(email, str) or not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google account has no valid email",
+        )
+
+    user = db.scalars(select(User).where(User.email == email)).one_or_none()
+
+    if user is None:
+        user = User(
+            email=email,
+            hashed_password=None,
+            is_verified=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    elif not user.is_verified:
+        user.is_verified = True
+        db.commit()
+
+    access_token = create_access_token(subject=str(user.id))
+
+    return TokenResponse(access_token=access_token, token_type="bearer")

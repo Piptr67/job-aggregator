@@ -225,3 +225,71 @@ def test_login_unverified_user(client, db_session):
 
     assert response.status_code == 403
     assert response.json()["detail"] == ("Please verify your email before logging in")
+
+
+def test_google_login_creates_new_user(client, db_session):
+    google_user = {
+        "email": "google@example.com",
+        "email_verified": True,
+        "sub": "google-user-123",
+    }
+
+    with patch(
+        "job_aggregator.api.routes.auth.verify_google_token",
+        return_value=google_user,
+    ):
+        response = client.post(
+            "/api/v1/auth/google",
+            json={"id_token": "fake-google-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["token_type"] == "bearer"
+
+    user = db_session.query(User).filter_by(email="google@example.com").one()
+    assert user.is_verified is True
+    assert user.hashed_password is None
+
+
+def test_google_login_rejects_invalid_token(client):
+    with patch(
+        "job_aggregator.api.routes.auth.verify_google_token",
+        side_effect=ValueError("Invalid token"),
+    ):
+        response = client.post(
+            "/api/v1/auth/google",
+            json={"id_token": "invalid-token"},
+        )
+
+    assert response.status_code == 401
+
+
+def test_google_login_reuses_existing_user(client, db_session):
+    user = User(
+        email="existing@example.com",
+        hashed_password=None,
+        is_verified=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    user_id = user.id
+
+    with patch(
+        "job_aggregator.api.routes.auth.verify_google_token",
+        return_value={
+            "email": "existing@example.com",
+            "email_verified": True,
+            "sub": "google-user-456",
+        },
+    ):
+        response = client.post(
+            "/api/v1/auth/google",
+            json={"id_token": "fake-google-token"},
+        )
+
+    assert response.status_code == 200
+
+    users = db_session.query(User).filter_by(email="existing@example.com").all()
+    assert len(users) == 1
+    assert users[0].id == user_id

@@ -19,3 +19,7 @@ class RegisterRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
+
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str

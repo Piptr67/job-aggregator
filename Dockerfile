@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN pip install uv
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+COPY src/ src/
+COPY alembic.ini ./
+COPY migrations/ migrations/
+ENV PYTHONPATH=/app/src
+
+EXPOSE 8000
+
+CMD ["uv", "run", "--no-sync", "uvicorn", "job_aggregator.main:app", "--host", "0.0.0.0", "--port", "8000"]

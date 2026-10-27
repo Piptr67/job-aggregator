@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from job_aggregator.api.dependencies import get_db
 from job_aggregator.core.security import create_access_token
 from job_aggregator.db.models.job import Job
+from job_aggregator.db.models.user import User
 from job_aggregator.main import app
 
 client = TestClient(app)
@@ -24,7 +25,16 @@ def test_get_jobs(db_session):
     db_session.add(job)
     db_session.commit()
 
-    token = create_access_token(subject="test-user")
+    user = User(
+        email="jobs-test@example.com",
+        hashed_password=None,
+        is_verified=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    token = create_access_token(subject=str(user.id))
 
     response = client.get("/api/v1/jobs", headers={"Authorization": f"Bearer {token}"})
 
@@ -75,7 +85,16 @@ def test_get_job(db_session):
     db_session.add(job)
     db_session.commit()
 
-    token = create_access_token(subject="test-user")
+    user = User(
+        email="jobs-test@example.com",
+        hashed_password=None,
+        is_verified=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    token = create_access_token(subject=str(user.id))
 
     response = client.get(
         f"/api/v1/jobs/{job.id}", headers={"Authorization": f"Bearer {token}"}
@@ -99,7 +118,16 @@ def test_get_job_not_found(db_session):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    token = create_access_token(subject="test-user")
+    user = User(
+        email="jobs-test@example.com",
+        hashed_password=None,
+        is_verified=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    token = create_access_token(subject=str(user.id))
 
     response = client.get(
         "/api/v1/jobs/999999", headers={"Authorization": f"Bearer {token}"}

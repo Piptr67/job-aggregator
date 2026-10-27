@@ -4,7 +4,7 @@ from typing import Literal
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from job_aggregator.api.schemas.jobs import JobsResponse, JobSummary
+from job_aggregator.api.schemas.jobs import JobsResponse, JobSummary, JobDetail
 from job_aggregator.api.dependencies import get_db, get_current_user
 from job_aggregator.db.models.job import Job
 
@@ -70,18 +70,12 @@ def get_jobs(
 
 
 @router.get(
-    "/{job_id}", response_model=JobSummary, dependencies=[Depends(get_current_user)]
+    "/{job_id}", response_model=JobDetail, dependencies=[Depends(get_current_user)]
 )
-def get_job(job_id: int, db: Session = Depends(get_db)) -> JobSummary:
+def get_job(job_id: int, db: Session = Depends(get_db)) -> JobDetail:
     result = db.scalars(select(Job).where(Job.id == job_id)).one_or_none()
+
     if result is None:
         raise HTTPException(status_code=404)
 
-    job = JobSummary(
-        id=result.id,
-        title=result.title,
-        company=result.company,
-        location=result.location,
-    )
-
-    return job
+    return JobDetail.model_validate(result)

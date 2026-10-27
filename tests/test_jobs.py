@@ -109,7 +109,12 @@ def test_get_job(db_session):
         "title": "Test Python Developer",
         "company": "Test Company",
         "location": None,
+        "url": "https://example.com/test-python-developer-2",
+        "description": None,
+        "source": "test",
+        "published_at": None,
     }
+    print(data)
 
 
 def test_get_job_not_found(db_session):

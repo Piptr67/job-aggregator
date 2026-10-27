@@ -7,7 +7,9 @@ resend.api_key = settings.resend_api_key
 
 
 def send_verification_email(email: str, token: str) -> None:
-    verification_link = f"http://localhost:8000/api/v1/auth/verify-email?token={token}"
+    verification_link = (
+        f"{settings.base_url.rstrip('/')}/api/v1/auth/verify-email?token={token}"
+    )
 
     resend.Emails.send(
         {

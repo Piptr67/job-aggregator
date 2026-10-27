@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from job_aggregator.api.dependencies import get_db
+from job_aggregator.api.dependencies import get_current_user, get_db
 from job_aggregator.ingestion.service import ingest_himalayas, ingest_arbeitnow
 
-router = APIRouter(prefix="/ingestion", tags=["ingestion"])
+router = APIRouter(
+    prefix="/ingestion", tags=["ingestion"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.post("/himalayas")

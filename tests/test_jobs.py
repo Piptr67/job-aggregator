@@ -75,7 +75,11 @@ def test_get_job(db_session):
     db_session.add(job)
     db_session.commit()
 
-    response = client.get(f"/api/v1/jobs/{job.id}")
+    token = create_access_token(subject="test-user")
+
+    response = client.get(
+        f"/api/v1/jobs/{job.id}", headers={"Authorization": f"Bearer {token}"}
+    )
 
     assert response.status_code == 200
 
@@ -95,6 +99,17 @@ def test_get_job_not_found(db_session):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    response = client.get("/api/v1/jobs/999999")
+    token = create_access_token(subject="test-user")
+
+    response = client.get(
+        "/api/v1/jobs/999999", headers={"Authorization": f"Bearer {token}"}
+    )
 
     assert response.status_code == 404
+
+
+def test_get_job_without_token():
+    response = client.get("/api/v1/jobs/1")
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"

@@ -69,7 +69,9 @@ def get_jobs(
     return JobsResponse(jobs=jobs)
 
 
-@router.get("/{job_id}", response_model=JobSummary)
+@router.get(
+    "/{job_id}", response_model=JobSummary, dependencies=[Depends(get_current_user)]
+)
 def get_job(job_id: int, db: Session = Depends(get_db)) -> JobSummary:
     result = db.scalars(select(Job).where(Job.id == job_id)).one_or_none()
     if result is None:

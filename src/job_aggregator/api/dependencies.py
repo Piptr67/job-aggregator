@@ -1,16 +1,23 @@
-import jwt
 from collections.abc import Generator
+
+import jwt
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from job_aggregator.db.session import SessionLocal
-from job_aggregator.db.models.user import User
 from job_aggregator.core.security import decode_access_token
+from job_aggregator.db.models.user import User
+from job_aggregator.db.session import SessionLocal
 
 bearer_scheme = HTTPBearer()
+
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Invalid authentication credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -32,26 +39,14 @@ def get_current_user(
         subject = payload.get("sub")
 
         if not isinstance(subject, str) or not subject.isdecimal():
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise credentials_exception
 
         user = db.scalar(select(User).where(User.id == int(subject)))
 
         if user is None or not user.is_verified:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise credentials_exception
 
         return user
 
     except (jwt.InvalidTokenError, ValueError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from None
+        raise credentials_exception from None

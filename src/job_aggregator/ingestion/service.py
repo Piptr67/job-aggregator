@@ -19,19 +19,19 @@ logger = logging.getLogger(__name__)
 
 
 def save_job(db: Session, parsed_job: ParsedJob) -> tuple[Job, bool]:
-    result = db.scalars(select(Job).where(Job.url == parsed_job["url"])).first()
+    result = db.scalars(select(Job).where(Job.url == parsed_job.url)).first()
 
     if result is not None:
         return result, False
 
     job = Job(
-        title=parsed_job["title"],
-        company=parsed_job["company"],
-        description=parsed_job["description"],
-        location=parsed_job["location"],
-        url=parsed_job["url"],
-        source=parsed_job["source"],
-        published_at=parsed_job["published_at"],
+        title=parsed_job.title,
+        company=parsed_job.company,
+        description=parsed_job.description,
+        location=parsed_job.location,
+        url=parsed_job.url,
+        source=parsed_job.source,
+        published_at=parsed_job.published_at,
     )
 
     db.add(job)
@@ -54,7 +54,7 @@ def save_jobs(db: Session, jobs: list[ParsedJob]) -> int:
             except (IntegrityError, DataError):
                 logger.warning(
                     "Skipping invalid job with URL %s",
-                    job["url"],
+                    job.url,
                     exc_info=True,
                 )
 
@@ -69,12 +69,10 @@ def save_jobs(db: Session, jobs: list[ParsedJob]) -> int:
 def ingest_himalayas(db: Session) -> int:
     feed = fetch_feed()
     parsed_jobs = parse_himalayas_jobs(feed)
-
     return save_jobs(db, parsed_jobs)
 
 
 def ingest_arbeitnow(db: Session) -> int:
     data = fetch_arbeitnow_jobs()
     parsed_jobs = parse_arbeitnow_jobs(data)
-
     return save_jobs(db, parsed_jobs)

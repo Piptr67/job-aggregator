@@ -1,3 +1,7 @@
+from pydantic import ValidationError
+import pytest
+
+from datetime import datetime
 from sqlalchemy import select
 
 from job_aggregator.db.models.job import Job
@@ -7,18 +11,31 @@ from job_aggregator.ingestion.service import (
     ingest_himalayas,
     save_job,
 )
+from job_aggregator.ingestion.schemas import ParsedJob
+
+
+def make_job(
+    title: str = "Python Developer",
+    company: str = "Example Tech",
+    description: str | None = "Build Python applications.",
+    location: str | None = "Poland",
+    url: str = "https://example.com/python-developer",
+    source: str = "himalayas",
+    published_at: datetime | None = None,
+) -> ParsedJob:
+    return ParsedJob(
+        title=title,
+        company=company,
+        description=description,
+        location=location,
+        url=url,
+        source=source,
+        published_at=published_at,
+    )
 
 
 def test_save_job(db_session):
-    parsed_job: service.ParsedJob = {
-        "title": "Python Developer",
-        "company": "Example Tech",
-        "description": "Build Python applications.",
-        "location": "Poland",
-        "url": "https://example.com/python-developer",
-        "source": "himalayas",
-        "published_at": None,
-    }
+    parsed_job = make_job()
 
     job, inserted = save_job(db_session, parsed_job)
 
@@ -34,15 +51,7 @@ def test_save_job(db_session):
 
 
 def test_save_job_duplicate_url(db_session):
-    parsed_job: service.ParsedJob = {
-        "title": "Python Developer",
-        "company": "Example Tech",
-        "description": "Build Python applications.",
-        "location": "Poland",
-        "url": "https://example.com/python-developer",
-        "source": "himalayas",
-        "published_at": None,
-    }
+    parsed_job = make_job()
 
     first_job, first_inserted = save_job(db_session, parsed_job)
     second_job, second_inserted = save_job(db_session, parsed_job)
@@ -55,30 +64,21 @@ def test_save_job_duplicate_url(db_session):
     assert len(jobs) == 1
 
 
-def test_save_jobs_skips_invalid_job(db_session, caplog):
-    valid_job_1: service.ParsedJob = {
-        "title": "Python Developer",
-        "company": "Example Tech",
-        "description": "Build Python applications.",
-        "location": "Poland",
-        "url": "https://example.com/python",
-        "source": "himalayas",
-        "published_at": None,
-    }
-    invalid_job = {
-        **valid_job_1,
-        "title": "X" * 300,
-        "url": "https://example.com/invalid",
-    }
-    valid_job_2 = {
-        **valid_job_1,
-        "title": "Backend Engineer",
-        "url": "https://example.com/backend",
-    }
+def test_parsed_job_rejects_invalid_title():
+    with pytest.raises(ValidationError):
+        make_job(title="X" * 300)
+
+
+def test_save_jobs_skips_invalid_job(db_session):
+    valid_job_1 = make_job(url="https://example.com/python")
+    valid_job_2 = make_job(
+        title="Backend Engineer",
+        url="https://example.com/backend",
+    )
 
     inserted_count = service.save_jobs(
         db_session,
-        [valid_job_1, invalid_job, valid_job_2],
+        [valid_job_1, valid_job_2],
     )
 
     saved_jobs = db_session.scalars(select(Job)).all()
@@ -94,25 +94,14 @@ def test_save_jobs_skips_invalid_job(db_session, caplog):
 def test_ingest_himalayas(db_session, monkeypatch):
     feed = "<rss>dummy</rss>"
 
-    parsed_jobs: list[service.ParsedJob] = [
-        {
-            "title": "Python Developer",
-            "company": "Example Tech",
-            "description": "Build Python applications.",
-            "location": "Poland",
-            "url": "https://example.com/python-dev",
-            "source": "himalayas",
-            "published_at": None,
-        },
-        {
-            "title": "Backend Engineer",
-            "company": "Another Tech",
-            "description": "Build backend systems.",
-            "location": "Germany",
-            "url": "https://example.com/backend-eng",
-            "source": "himalayas",
-            "published_at": None,
-        },
+    parsed_jobs = [
+        make_job(url="https://example.com/python-dev"),
+        make_job(
+            title="Backend Engineer",
+            company="Another Tech",
+            location="Germany",
+            url="https://example.com/backend-eng",
+        ),
     ]
 
     monkeypatch.setattr(service, "fetch_feed", lambda: feed)
@@ -129,25 +118,18 @@ def test_ingest_himalayas(db_session, monkeypatch):
 def test_ingest_arbeitnow(db_session, monkeypatch):
     data = {"data": [{"title": "Python Developer"}]}
 
-    parsed_jobs: list[service.ParsedJob] = [
-        {
-            "title": "Python Developer",
-            "company": "Example Tech",
-            "description": "Build Python applications.",
-            "location": "Poland",
-            "url": "https://arbeitnow.com/jobs/python-dev",
-            "source": "arbeitnow",
-            "published_at": None,
-        },
-        {
-            "title": "Backend Engineer",
-            "company": "Another Tech",
-            "description": "Build backend systems.",
-            "location": "Germany",
-            "url": "https://arbeitnow.com/jobs/backend-eng",
-            "source": "arbeitnow",
-            "published_at": None,
-        },
+    parsed_jobs = [
+        make_job(
+            url="https://arbeitnow.com/jobs/python-dev",
+            source="arbeitnow",
+        ),
+        make_job(
+            title="Backend Engineer",
+            company="Another Tech",
+            location="Germany",
+            url="https://arbeitnow.com/jobs/backend-eng",
+            source="arbeitnow",
+        ),
     ]
 
     monkeypatch.setattr(service, "fetch_arbeitnow_jobs", lambda: data)

@@ -6,7 +6,7 @@ from job_aggregator.ingestion.himalayas import parse_jobs
 
 
 def test_parse_jobs():
-    feed = """\
+    feed = """
         <rss version="2.0"
             xmlns:himalayasJobs="https://himalayas.app/ns/jobs"
             xmlns:content="http://purl.org/rss/1.0/modules/content/">
@@ -37,41 +37,67 @@ def test_parse_jobs():
 
     job = jobs[0]
 
-    assert job["title"] == "Python Developer"
-    assert job["company"] == "Example Tech"
-    assert job["location"] == "Poland"
-    assert job["url"] == "https://example.com/python-developer"
-    assert job["source"] == "himalayas"
-    assert job["description"] == "Python apps."
+    assert job.title == "Python Developer"
+    assert job.company == "Example Tech"
+    assert job.location == "Poland"
+    assert job.url == "https://example.com/python-developer"
+    assert job.source == "himalayas"
+    assert job.description == "Python apps."
 
-    assert job["published_at"] is not None
-    assert job["published_at"].year == 2026
-    assert job["published_at"].month == 10
-    assert job["published_at"].day == 8
-
-    assert job["published_at"].hour == 15
-    assert job["published_at"].minute == 41
-    assert job["published_at"].second == 39
-    assert job["published_at"].tzinfo is not None
+    assert job.published_at is not None
+    assert job.published_at.year == 2026
+    assert job.published_at.month == 10
+    assert job.published_at.day == 8
+    assert job.published_at.hour == 15
+    assert job.published_at.minute == 41
+    assert job.published_at.second == 39
+    assert job.published_at.tzinfo is not None
 
     second_job = jobs[1]
 
-    assert second_job["title"] == "Backend Engineer"
-    assert second_job["company"] == "Another Tech"
-    assert second_job["location"] == "Germany"
-    assert second_job["url"] == "https://example.com/backend-engineer"
+    assert second_job.title == "Backend Engineer"
+    assert second_job.company == "Another Tech"
+    assert second_job.location == "Germany"
+    assert second_job.url == "https://example.com/backend-engineer"
 
-    assert second_job["published_at"] is not None
-    assert second_job["published_at"].year == 2026
-    assert second_job["published_at"].day == 9
+    assert second_job.published_at is not None
+    assert second_job.published_at.year == 2026
+    assert second_job.published_at.day == 9
+
+
+def test_parse_jobs_skips_invalid_records():
+    feed = """
+        <rss version="2.0"
+            xmlns:himalayasJobs="https://himalayas.app/ns/jobs">
+            <channel>
+                <item>
+                    <title></title>
+                    <link>https://example.com/invalid</link>
+                    <himalayasJobs:companyName>Example Tech</himalayasJobs:companyName>
+                </item>
+                <item>
+                    <title>Valid Developer</title>
+                    <link>https://example.com/valid</link>
+                    <himalayasJobs:companyName>Example Tech</himalayasJobs:companyName>
+                </item>
+            </channel>
+        </rss>
+    """
+
+    jobs = parse_jobs(feed)
+
+    assert len(jobs) == 1
+    assert jobs[0].title == "Valid Developer"
 
 
 def test_parse_published_at_missing():
-    feed = """\
-        <rss version="2.0">
+    feed = """
+        <rss version="2.0"
+             xmlns:himalayas="https://himalayas.app/ns/jobs">
             <channel>
                 <item>
                     <title>Python Developer</title>
+                    <himalayas:companyName>Example Tech</himalayas:companyName>
                     <link>https://example.com/python-developer</link>
                 </item>
             </channel>
@@ -81,7 +107,7 @@ def test_parse_published_at_missing():
     jobs = parse_jobs(feed)
 
     assert len(jobs) == 1
-    assert jobs[0]["published_at"] is None
+    assert jobs[0].published_at is None
 
 
 def test_fetch_feed(monkeypatch):

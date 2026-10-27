@@ -56,15 +56,7 @@ def get_jobs(
     query = query.limit(limit).offset(offset)
 
     result = db.scalars(query).all()
-    jobs = [
-        JobSummary(
-            id=job.id,
-            title=job.title,
-            company=job.company,
-            location=job.location,
-        )
-        for job in result
-    ]
+    jobs = [JobSummary.model_validate(job) for job in result]
 
     return JobsResponse(jobs=jobs)
 

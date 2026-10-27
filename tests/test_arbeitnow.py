@@ -35,28 +35,50 @@ def test_parse_jobs():
 
     job = jobs[0]
 
-    assert job["title"] == "Python Developer"
-    assert job["company"] == "Example Tech"
-    assert job["location"] == "Poland"
-    assert job["url"] == "https://example.com/python-developer"
-    assert job["source"] == "arbeitnow"
-    assert job["description"] == "Python apps."
-
-    assert job["published_at"] == datetime.fromtimestamp(1791474099, tz=timezone.utc)
-    assert job["published_at"].tzinfo is not None
+    assert job.title == "Python Developer"
+    assert job.company == "Example Tech"
+    assert job.location == "Poland"
+    assert job.url == "https://example.com/python-developer"
+    assert job.source == "arbeitnow"
+    assert job.description == "Python apps."
+    assert job.published_at == datetime.fromtimestamp(1791474099, tz=timezone.utc)
+    assert job.published_at.tzinfo is not None
 
     second_job = jobs[1]
 
-    assert second_job["title"] == "Backend Engineer"
-    assert second_job["company"] == "Another Tech"
-    assert second_job["location"] == "Germany"
-    assert second_job["url"] == "https://example.com/backend-engineer"
-    assert second_job["source"] == "arbeitnow"
-    assert second_job["description"] == "Backend systems."
-
-    assert second_job["published_at"] == datetime.fromtimestamp(
+    assert second_job.title == "Backend Engineer"
+    assert second_job.company == "Another Tech"
+    assert second_job.location == "Germany"
+    assert second_job.url == "https://example.com/backend-engineer"
+    assert second_job.source == "arbeitnow"
+    assert second_job.description == "Backend systems."
+    assert second_job.published_at == datetime.fromtimestamp(
         1791532800, tz=timezone.utc
     )
+
+
+def test_parse_jobs_skips_invalid_records():
+    data = {
+        "data": [
+            {
+                "title": "",
+                "company_name": "Example Tech",
+                "url": "https://example.com/invalid",
+                "created_at": 1791474099,
+            },
+            {
+                "title": "Valid Developer",
+                "company_name": "Example Tech",
+                "url": "https://example.com/valid",
+                "created_at": 1791474099,
+            },
+        ]
+    }
+
+    jobs = parse_jobs(data)
+
+    assert len(jobs) == 1
+    assert jobs[0].title == "Valid Developer"
 
 
 def test_fetch_jobs(monkeypatch):

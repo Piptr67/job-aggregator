@@ -15,6 +15,8 @@ class Settings(BaseSettings):
 
     google_client_id: str
 
+    base_url: str
+
     model_config = {
         "env_file": ".env",
     }

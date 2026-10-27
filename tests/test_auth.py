@@ -293,3 +293,43 @@ def test_google_login_reuses_existing_user(client, db_session):
     users = db_session.query(User).filter_by(email="existing@example.com").all()
     assert len(users) == 1
     assert users[0].id == user_id
+
+
+def test_google_login_clears_password_for_unverified_existing_user(client, db_session):
+    attacker_password = "Attacker-controlled-password-123!"
+
+    user = User(
+        email="victim@example.com",
+        hashed_password=hash_password(attacker_password),
+        is_verified=False,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    with patch(
+        "job_aggregator.api.routes.auth.verify_google_token",
+        return_value={
+            "email": "victim@example.com",
+            "email_verified": True,
+            "sub": "victim-google-id",
+        },
+    ):
+        response = client.post(
+            "/api/v1/auth/google",
+            json={"id_token": "fake-google-token"},
+        )
+
+    assert response.status_code == 200
+
+    db_session.refresh(user)
+    assert user.is_verified is True
+    assert user.hashed_password is None
+
+    login_response = client.post(
+        "/api/v1/auth/token",
+        json={
+            "email": "victim@example.com",
+            "password": attacker_password,
+        },
+    )
+    assert login_response.status_code == 401

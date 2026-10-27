@@ -141,6 +141,7 @@ def google_login(
         db.refresh(user)
     elif not user.is_verified:
         user.is_verified = True
+        user.hashed_password = None
         db.commit()
 
     access_token = create_access_token(subject=str(user.id))

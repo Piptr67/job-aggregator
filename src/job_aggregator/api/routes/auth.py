@@ -92,7 +92,7 @@ def verify_email(
             detail="Invalid or expired verification link",
         ) from None
 
-    user = db.query(User).filter(User.email == email).first()
+    user = db.scalars(select(User).where(User.email == email)).one_or_none()
 
     if user is None:
         raise HTTPException(

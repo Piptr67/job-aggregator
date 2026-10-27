@@ -114,7 +114,6 @@ def test_get_job(db_session):
         "source": "test",
         "published_at": None,
     }
-    print(data)
 
 
 def test_get_job_not_found(db_session):

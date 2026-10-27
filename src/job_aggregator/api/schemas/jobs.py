@@ -1,10 +1,11 @@
-from pydantic import BaseModel
 from datetime import datetime
 
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 
 class JobSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
     company: str
@@ -16,6 +17,8 @@ class JobsResponse(BaseModel):
 
 
 class JobDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
     company: str
@@ -24,5 +27,3 @@ class JobDetail(BaseModel):
     description: str | None
     source: str
     published_at: datetime | None
-
-    model_config = ConfigDict(from_attributes=True)

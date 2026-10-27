@@ -76,7 +76,7 @@ def register(
     verification_token = create_verification_token(user.email)
     send_verification_email(user.email, verification_token)
 
-    return UserResponse(id=user.id, email=user.email)
+    return UserResponse.model_validate(user)
 
 
 @router.get("/verify-email")

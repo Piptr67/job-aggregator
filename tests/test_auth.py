@@ -41,6 +41,30 @@ def test_register_user(db_session):
     mock_send.assert_called_once()
 
 
+def test_register_invalid_email():
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "not-an-email",
+            "password": "Strong-password-123!",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_register_password_too_short():
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "short-password@example.com",
+            "password": "short",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_register_duplicate_email(db_session):
     def override_get_db():
         yield db_session

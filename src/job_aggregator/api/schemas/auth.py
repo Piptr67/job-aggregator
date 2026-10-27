@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class TokenRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
@@ -12,13 +12,15 @@ class TokenResponse(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    email: str
-    password: str
+    email: EmailStr
+    password: str = Field(min_length=8)
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
-    email: str
+    email: EmailStr
 
 
 class GoogleLoginRequest(BaseModel):

@@ -21,6 +21,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://job_aggregator:${DB_PASSWORD:-123}@db:5432/job_aggregator
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
     ports:
       - "8000:8000"
     depends_on:

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from enum import StrEnum
+from xml.etree.ElementTree import ParseError
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException
@@ -46,6 +47,11 @@ def trigger_ingestion(
             total_inserted += SOURCE_REGISTRY[source_name](db)
         except requests.RequestException:
             failures.append(source_name.value)
+        except (ParseError, ValueError):
+            if source_name == IngestionSource.himalayas:
+                failures.append(source_name.value)
+            else:
+                raise
 
     if failures:
         raise HTTPException(

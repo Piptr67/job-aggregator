@@ -8,14 +8,17 @@ from job_aggregator.api.dependencies import get_current_user, get_db
 from job_aggregator.api.schemas.jobs import JobDetail, JobsResponse, JobSummary
 from job_aggregator.db.models.job import Job
 
-router = APIRouter(prefix="/jobs")
+router = APIRouter(
+    prefix="/jobs",
+    dependencies=[Depends(get_current_user)],
+)
 
 
 def escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-@router.get("", response_model=JobsResponse, dependencies=[Depends(get_current_user)])
+@router.get("", response_model=JobsResponse)
 def get_jobs(
     location: str | None = None,
     company: str | None = None,
@@ -34,7 +37,9 @@ def get_jobs(
         )
 
     if company:
-        query = query.where(Job.company.ilike(f"%{escape_like(company)}%", escape="\\"))
+        query = query.where(
+            Job.company.ilike(f"%{escape_like(company)}%", escape="\\")
+        )
 
     if q:
         search_term = f"%{escape_like(q)}%"
@@ -70,9 +75,7 @@ def get_jobs(
     return JobsResponse(jobs=jobs, total=total)
 
 
-@router.get(
-    "/{job_id}", response_model=JobDetail, dependencies=[Depends(get_current_user)]
-)
+@router.get("/{job_id}", response_model=JobDetail)
 def get_job(job_id: int, db: Session = Depends(get_db)) -> JobDetail:
     result = db.scalars(select(Job).where(Job.id == job_id)).one_or_none()
 

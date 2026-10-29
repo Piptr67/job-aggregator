@@ -67,3 +67,9 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+
+      - name: Build Docker image
+        run: docker build --tag job-aggregator:ci .
+
+      - name: Run tests with coverage
+        run: uv run pytest --cov=job_aggregator --cov-report=term-missing --cov-fail-under=90

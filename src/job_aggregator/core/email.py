@@ -2,7 +2,6 @@ import resend
 
 from job_aggregator.core.config import settings
 
-
 resend.api_key = settings.resend_api_key
 
 

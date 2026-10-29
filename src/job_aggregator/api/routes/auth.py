@@ -1,5 +1,4 @@
 import jwt
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from google.auth.exceptions import GoogleAuthError
 from sqlalchemy import select
@@ -8,9 +7,9 @@ from sqlalchemy.orm import Session
 from job_aggregator.api.dependencies import get_db
 from job_aggregator.api.schemas.auth import (
     GoogleLoginRequest,
-    TokenResponse,
-    TokenRequest,
     RegisterRequest,
+    TokenRequest,
+    TokenResponse,
     UserResponse,
 )
 from job_aggregator.core.email import send_verification_email
@@ -18,8 +17,8 @@ from job_aggregator.core.google_auth import verify_google_token
 from job_aggregator.core.passwords import hash_password, verify_password
 from job_aggregator.core.security import (
     create_access_token,
-    decode_verification_token,
     create_verification_token,
+    decode_verification_token,
 )
 from job_aggregator.db.models.user import User
 

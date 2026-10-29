@@ -10,12 +10,6 @@ class Job(Base):
     __tablename__ = "jobs"
     __table_args__ = (
         Index("ix_jobs_published_at", "published_at"),
-        Index(
-            "ix_jobs_description_trgm",
-            "description",
-            postgresql_using="gin",
-            postgresql_ops={"description": "gin_trgm_ops"},
-        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -1,20 +1,9 @@
-from fastapi.testclient import TestClient
-
-from job_aggregator.api.dependencies import get_db
 from job_aggregator.core.security import create_access_token
 from job_aggregator.db.models.job import Job
 from job_aggregator.db.models.user import User
-from job_aggregator.main import app
-
-client = TestClient(app)
 
 
-def test_get_jobs(db_session):
-    def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-
+def test_get_jobs(client, db_session):
     job = Job(
         title="Test Python Developer",
         company="Test Company",
@@ -36,7 +25,10 @@ def test_get_jobs(db_session):
 
     token = create_access_token(subject=str(user.id))
 
-    response = client.get("/api/v1/jobs", headers={"Authorization": f"Bearer {token}"})
+    response = client.get(
+        "/api/v1/jobs",
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
     assert response.status_code == 200
 
@@ -52,14 +44,14 @@ def test_get_jobs(db_session):
     ]
 
 
-def test_get_jobs_without_token():
+def test_get_jobs_without_token(client):
     response = client.get("/api/v1/jobs")
 
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"
 
 
-def test_get_jobs_with_invalid_token():
+def test_get_jobs_with_invalid_token(client):
     response = client.get(
         "/api/v1/jobs",
         headers={"Authorization": "Bearer definitely-not-a-valid-token"},
@@ -69,12 +61,7 @@ def test_get_jobs_with_invalid_token():
     assert response.headers["www-authenticate"] == "Bearer"
 
 
-def test_get_job(db_session):
-    def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-
+def test_get_job(client, db_session):
     job = Job(
         title="Test Python Developer",
         company="Test Company",
@@ -97,7 +84,8 @@ def test_get_job(db_session):
     token = create_access_token(subject=str(user.id))
 
     response = client.get(
-        f"/api/v1/jobs/{job.id}", headers={"Authorization": f"Bearer {token}"}
+        f"/api/v1/jobs/{job.id}",
+        headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 200
@@ -116,12 +104,7 @@ def test_get_job(db_session):
     }
 
 
-def test_get_job_not_found(db_session):
-    def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-
+def test_get_job_not_found(client, db_session):
     user = User(
         email="jobs-test@example.com",
         hashed_password=None,
@@ -134,13 +117,14 @@ def test_get_job_not_found(db_session):
     token = create_access_token(subject=str(user.id))
 
     response = client.get(
-        "/api/v1/jobs/999999", headers={"Authorization": f"Bearer {token}"}
+        "/api/v1/jobs/999999",
+        headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 404
 
 
-def test_get_job_without_token():
+def test_get_job_without_token(client):
     response = client.get("/api/v1/jobs/1")
 
     assert response.status_code == 401

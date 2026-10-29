@@ -1,10 +1,10 @@
-import requests
-
 from datetime import datetime, timezone
+
+import requests
 from pydantic import ValidationError
 
-from job_aggregator.ingestion.schemas import ParsedJob
 from job_aggregator.core.config import settings
+from job_aggregator.ingestion.schemas import ParsedJob
 
 
 def fetch_jobs() -> dict:
@@ -14,11 +14,14 @@ def fetch_jobs() -> dict:
 
 
 def parse_jobs(data: dict) -> list[ParsedJob]:
-    jobs = data.get("data", [])
     parsed_jobs: list[ParsedJob] = []
 
-    for job in jobs:
+    for job in data.get("data", []):
         try:
+            published_at = datetime.fromtimestamp(
+                job["created_at"],
+                tz=timezone.utc,
+            )
             parsed_job = ParsedJob(
                 title=job.get("title"),
                 company=job.get("company_name"),
@@ -26,12 +29,15 @@ def parse_jobs(data: dict) -> list[ParsedJob]:
                 location=job.get("location"),
                 url=job.get("url"),
                 source="arbeitnow",
-                published_at=datetime.fromtimestamp(
-                    job["created_at"],
-                    tz=timezone.utc,
-                ),
+                published_at=published_at,
             )
-        except (ValidationError, KeyError, TypeError, ValueError, OverflowError):
+        except (
+            ValidationError,
+            KeyError,
+            TypeError,
+            ValueError,
+            OverflowError,
+        ):
             continue
 
         parsed_jobs.append(parsed_job)

@@ -23,9 +23,7 @@ def authenticated_headers(db_session) -> dict[str, str]:
 def test_ingestion_himalayas_success(client, db_session):
     headers = authenticated_headers(db_session)
 
-    with patch(
-        "job_aggregator.api.routes.ingestion.SOURCE_REGISTRY"
-    ) as registry:
+    with patch("job_aggregator.api.routes.ingestion.SOURCE_REGISTRY") as registry:
         registry.get.return_value = lambda db: 3
 
         response = client.post("/api/v1/ingestion/himalayas", headers=headers)
@@ -37,9 +35,7 @@ def test_ingestion_himalayas_success(client, db_session):
 def test_ingestion_arbeitnow_success(client, db_session):
     headers = authenticated_headers(db_session)
 
-    with patch(
-        "job_aggregator.api.routes.ingestion.SOURCE_REGISTRY"
-    ) as registry:
+    with patch("job_aggregator.api.routes.ingestion.SOURCE_REGISTRY") as registry:
         registry.get.return_value = lambda db: 2
 
         response = client.post("/api/v1/ingestion/arbeitnow", headers=headers)
@@ -63,9 +59,7 @@ def test_ingestion_upstream_failure_returns_502(client, db_session):
     def raise_connection_error(db):
         raise requests.ConnectionError("Upstream unavailable")
 
-    with patch(
-        "job_aggregator.api.routes.ingestion.SOURCE_REGISTRY"
-    ) as registry:
+    with patch("job_aggregator.api.routes.ingestion.SOURCE_REGISTRY") as registry:
         registry.get.return_value = raise_connection_error
 
         response = client.post("/api/v1/ingestion/himalayas", headers=headers)

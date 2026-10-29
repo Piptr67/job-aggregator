@@ -52,9 +52,7 @@ def test_parse_jobs():
     assert second_job.url == "https://example.com/backend-engineer"
     assert second_job.source == "arbeitnow"
     assert second_job.description == "Backend systems."
-    assert second_job.published_at == datetime.fromtimestamp(
-        1791532800, tz=UTC
-    )
+    assert second_job.published_at == datetime.fromtimestamp(1791532800, tz=UTC)
 
 
 def test_parse_jobs_skips_invalid_records():

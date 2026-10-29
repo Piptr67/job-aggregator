@@ -8,3 +8,6 @@ dist/
 .env
 .env.test
 backup_data.sql
+.coverage
+.coverage.*
+htmlcov/

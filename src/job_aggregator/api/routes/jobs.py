@@ -34,9 +34,7 @@ def get_jobs(
         )
 
     if company:
-        query = query.where(
-            Job.company.ilike(f"%{escape_like(company)}%", escape="\\")
-        )
+        query = query.where(Job.company.ilike(f"%{escape_like(company)}%", escape="\\"))
 
     if q:
         search_term = f"%{escape_like(q)}%"
@@ -48,9 +46,7 @@ def get_jobs(
             )
         )
 
-    total = db.scalar(
-        select(func.count()).select_from(query.subquery())
-    ) or 0
+    total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
 
     sort_columns = {
         "published_at": Job.published_at,

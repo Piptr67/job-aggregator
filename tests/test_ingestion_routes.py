@@ -31,7 +31,7 @@ def test_ingestion_himalayas_success(client, db_session):
         response = client.post("/api/v1/ingestion/himalayas", headers=headers)
 
     assert response.status_code == 200
-    assert response.json() == {"jobs_processed": 3}
+    assert response.json() == {"jobs_inserted": 3}
 
 
 def test_ingestion_arbeitnow_success(client, db_session):
@@ -44,7 +44,7 @@ def test_ingestion_arbeitnow_success(client, db_session):
         response = client.post("/api/v1/ingestion/arbeitnow", headers=headers)
 
     assert response.status_code == 200
-    assert response.json() == {"jobs_processed": 2}
+    assert response.json() == {"jobs_inserted": 2}
 
 
 def test_ingestion_all_sources_success(client, db_session):
@@ -60,7 +60,7 @@ def test_ingestion_all_sources_success(client, db_session):
         response = client.post("/api/v1/ingestion/all", headers=headers)
 
     assert response.status_code == 200
-    assert response.json() == {"jobs_processed": 5}
+    assert response.json() == {"jobs_inserted": 5}
 
 
 def test_ingestion_unsupported_source(client, db_session):
@@ -85,7 +85,7 @@ def test_ingestion_upstream_failure_returns_502(client, db_session):
 
     assert response.status_code == 502
     assert response.json()["detail"] == {
-        "jobs_processed": 0,
+        "jobs_inserted": 0,
         "failed_sources": ["himalayas"],
     }
 

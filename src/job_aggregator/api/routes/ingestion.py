@@ -32,14 +32,18 @@ def trigger_ingestion(
     source: IngestionSource,
     db: Session = Depends(get_db),
 ) -> dict[str, int]:
-    source_names = list(SOURCE_REGISTRY) if source == IngestionSource.all else [source]
+    source_names = (
+        list(SOURCE_REGISTRY)
+        if source == IngestionSource.all
+        else [source]
+    )
 
-    total_processed = 0
+    total_inserted = 0
     failures: list[str] = []
 
     for source_name in source_names:
         try:
-            total_processed += SOURCE_REGISTRY[source_name](db)
+            total_inserted += SOURCE_REGISTRY[source_name](db)
         except requests.RequestException:
             failures.append(source_name.value)
 
@@ -47,9 +51,9 @@ def trigger_ingestion(
         raise HTTPException(
             status_code=502,
             detail={
-                "jobs_processed": total_processed,
+                "jobs_inserted": total_inserted,
                 "failed_sources": failures,
             },
         )
 
-    return {"jobs_processed": total_processed}
+    return {"jobs_inserted": total_inserted}

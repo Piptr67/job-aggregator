@@ -1,5 +1,3 @@
-from typing import Literal
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -16,7 +14,7 @@ router = APIRouter(
 
 @router.post("/{source}")
 def trigger_ingestion(
-    source: IngestionSource | Literal["all"],
+    source: IngestionSource,
     db: Session = Depends(get_db),
 ) -> dict[str, object]:
     try:

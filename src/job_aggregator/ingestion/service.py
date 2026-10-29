@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from enum import StrEnum
-from typing import Literal
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -14,9 +13,10 @@ from job_aggregator.ingestion.schemas import ParsedJob
 class IngestionSource(StrEnum):
     himalayas = "himalayas"
     arbeitnow = "arbeitnow"
+    all = "all"
 
 
-IngestionRequest = IngestionSource | Literal["all"]
+IngestionRequest = IngestionSource
 Fetcher = Callable[[], object]
 SourceIngestor = Callable[[Session], int]
 

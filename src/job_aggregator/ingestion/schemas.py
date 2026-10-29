@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ParsedJob(BaseModel):
@@ -13,10 +13,3 @@ class ParsedJob(BaseModel):
     url: str = Field(min_length=1)
     source: str
     published_at: datetime | None = None
-
-    @field_validator("title", "company", "url")
-    @classmethod
-    def required_text_must_not_be_blank(cls, value: str) -> str:
-        if not value:
-            raise ValueError("Field must not be blank")
-        return value

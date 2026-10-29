@@ -18,10 +18,6 @@ def parse_jobs(data: dict) -> list[ParsedJob]:
 
     for job in data.get("data", []):
         try:
-            published_at = datetime.fromtimestamp(
-                job["created_at"],
-                tz=timezone.utc,
-            )
             parsed_job = ParsedJob(
                 title=job.get("title"),
                 company=job.get("company_name"),
@@ -29,15 +25,12 @@ def parse_jobs(data: dict) -> list[ParsedJob]:
                 location=job.get("location"),
                 url=job.get("url"),
                 source="arbeitnow",
-                published_at=published_at,
+                published_at=datetime.fromtimestamp(
+                    job["created_at"],
+                    tz=timezone.utc,
+                ),
             )
-        except (
-            ValidationError,
-            KeyError,
-            TypeError,
-            ValueError,
-            OverflowError,
-        ):
+        except (ValidationError, KeyError, TypeError, ValueError, OverflowError):
             continue
 
         parsed_jobs.append(parsed_job)

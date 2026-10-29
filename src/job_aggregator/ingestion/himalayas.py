@@ -31,13 +31,24 @@ def parse_jobs(feed: str) -> list[ParsedJob]:
     jobs: list[ParsedJob] = []
 
     for item in channel.findall("item"):
+        title = item.findtext("title")
+        company = item.findtext(
+            "himalayas:companyName",
+            namespaces=NAMESPACES,
+        )
+        url = item.findtext("link")
+
+        if not title or not title.strip():
+            continue
+        if not company or not company.strip():
+            continue
+        if not url or not url.strip():
+            continue
+
         try:
             job = ParsedJob(
-                title=item.findtext("title"),
-                company=item.findtext(
-                    "himalayas:companyName",
-                    namespaces=NAMESPACES,
-                ),
+                title=title,
+                company=company,
                 description=item.findtext(
                     "content:encoded",
                     namespaces=NAMESPACES,
@@ -46,7 +57,7 @@ def parse_jobs(feed: str) -> list[ParsedJob]:
                     "himalayas:locationRestriction",
                     namespaces=NAMESPACES,
                 ),
-                url=item.findtext("link"),
+                url=url,
                 source="himalayas",
                 published_at=parse_published_at(item.findtext("pubDate")),
             )

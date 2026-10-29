@@ -1,15 +1,16 @@
+
 services:
   db:
     image: postgres:18
     restart: unless-stopped
     environment:
       POSTGRES_USER: job_aggregator
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-123}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in your .env file}
       POSTGRES_DB: job_aggregator
     ports:
-      - "5433:5432"   # optional: only for connecting from WSL/Windows tools
+      - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql   # Postgres 18 path
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U job_aggregator -d job_aggregator"]
       interval: 5s
@@ -20,7 +21,7 @@ services:
     build: .
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+psycopg://${DB_USER:-job_aggregator}:${DB_PASSWORD}@db:5432/job_aggregator
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-job_aggregator}:${DB_PASSWORD:?Set DB_PASSWORD in your .env file}@db:5432/job_aggregator
       BASE_URL: ${BASE_URL:-http://localhost:8000}
     ports:
       - "8000:8000"

@@ -8,9 +8,7 @@ from job_aggregator.db.base import Base
 
 class Job(Base):
     __tablename__ = "jobs"
-    __table_args__ = (
-        Index("ix_jobs_published_at", "published_at"),
-    )
+    __table_args__ = (Index("ix_jobs_published_at", "published_at"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255))

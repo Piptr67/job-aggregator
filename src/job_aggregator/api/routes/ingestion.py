@@ -33,11 +33,7 @@ def trigger_ingestion(
     source: IngestionSource,
     db: Session = Depends(get_db),
 ) -> dict[str, int]:
-    source_names = (
-        list(SOURCE_REGISTRY)
-        if source == IngestionSource.all
-        else [source]
-    )
+    source_names = list(SOURCE_REGISTRY) if source == IngestionSource.all else [source]
 
     total_inserted = 0
     failures: list[str] = []

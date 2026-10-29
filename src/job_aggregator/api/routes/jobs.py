@@ -37,9 +37,7 @@ def get_jobs(
         )
 
     if company:
-        query = query.where(
-            Job.company.ilike(f"%{escape_like(company)}%", escape="\\")
-        )
+        query = query.where(Job.company.ilike(f"%{escape_like(company)}%", escape="\\"))
 
     if q:
         search_term = f"%{escape_like(q)}%"

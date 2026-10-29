@@ -32,59 +32,47 @@ def test_parse_jobs():
     jobs = parse_jobs(data)
 
     assert len(jobs) == 2
-
-    job = jobs[0]
-
-    assert job.title == "Python Developer"
-    assert job.company == "Example Tech"
-    assert job.location == "Poland"
-    assert job.url == "https://example.com/python-developer"
-    assert job.source == "arbeitnow"
-    assert job.description == "Python apps."
-    assert job.published_at == datetime.fromtimestamp(1791474099, tz=UTC)
-    assert job.published_at.tzinfo is not None
-
-    second_job = jobs[1]
-
-    assert second_job.title == "Backend Engineer"
-    assert second_job.company == "Another Tech"
-    assert second_job.location == "Germany"
-    assert second_job.url == "https://example.com/backend-engineer"
-    assert second_job.source == "arbeitnow"
-    assert second_job.description == "Backend systems."
-    assert second_job.published_at == datetime.fromtimestamp(1791532800, tz=UTC)
+    for job, expected in zip(jobs, data["data"], strict=True):
+        assert job.title == expected["title"]
+        assert job.company == expected["company_name"]
+        assert job.description == expected["description"]
+        assert job.location == expected["location"]
+        assert job.url == expected["url"]
+        assert job.source == "arbeitnow"
+        assert job.published_at == datetime.fromtimestamp(
+            expected["created_at"], tz=UTC
+        )
 
 
 def test_parse_jobs_skips_invalid_records():
-    data = {
-        "data": [
-            {
-                "title": "",
-                "company_name": "Example Tech",
-                "url": "https://example.com/invalid",
-                "created_at": 1791474099,
-            },
-            {
-                "title": "Valid Developer",
-                "company_name": "Example Tech",
-                "url": "https://example.com/valid",
-                "created_at": 1791474099,
-            },
-        ]
-    }
+    jobs = parse_jobs(
+        {
+            "data": [
+                {
+                    "title": "",
+                    "company_name": "Example Tech",
+                    "url": "https://example.com/invalid",
+                    "created_at": 1791474099,
+                },
+                {
+                    "title": "Valid Developer",
+                    "company_name": "Example Tech",
+                    "url": "https://example.com/valid",
+                    "created_at": 1791474099,
+                },
+            ]
+        }
+    )
 
-    jobs = parse_jobs(data)
-
-    assert len(jobs) == 1
-    assert jobs[0].title == "Valid Developer"
+    assert [job.title for job in jobs] == ["Valid Developer"]
 
 
 def test_fetch_jobs(monkeypatch):
-    expected_data = {"data": [{"title": "Python Developer"}]}
+    expected = {"data": [{"title": "Python Developer"}]}
 
     class FakeResponse:
         def json(self):
-            return expected_data
+            return expected
 
         def raise_for_status(self):
             pass
@@ -96,30 +84,29 @@ def test_fetch_jobs(monkeypatch):
 
     monkeypatch.setattr(arbeitnow.requests, "get", fake_get)
 
-    data = arbeitnow.fetch_jobs()
-
-    assert data == expected_data
+    assert arbeitnow.fetch_jobs() == expected
 
 
-def test_fetch_jobs_error(monkeypatch):
-    class FakeResponse:
-        def raise_for_status(self):
-            raise requests.HTTPError("500 Server Error")
-
+@pytest.mark.parametrize(
+    "error",
+    [
+        requests.HTTPError("500 Server Error"),
+        requests.Timeout("Request timed out"),
+    ],
+    ids=["http-error", "timeout"],
+)
+def test_fetch_jobs_errors(monkeypatch, error):
     def fake_get(url, timeout):
-        return FakeResponse()
+        if isinstance(error, requests.HTTPError):
+
+            class FakeResponse:
+                def raise_for_status(self):
+                    raise error
+
+            return FakeResponse()
+        raise error
 
     monkeypatch.setattr(arbeitnow.requests, "get", fake_get)
 
-    with pytest.raises(requests.HTTPError):
-        arbeitnow.fetch_jobs()
-
-
-def test_fetch_jobs_timeout(monkeypatch):
-    def fake_get(url, timeout):
-        raise requests.Timeout("Request timed out")
-
-    monkeypatch.setattr(arbeitnow.requests, "get", fake_get)
-
-    with pytest.raises(requests.Timeout):
+    with pytest.raises(type(error)):
         arbeitnow.fetch_jobs()

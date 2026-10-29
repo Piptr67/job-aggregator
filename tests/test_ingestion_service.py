@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -14,54 +12,43 @@ from job_aggregator.ingestion.service import (
 )
 
 
-def make_job(
-    title: str = "Python Developer",
-    company: str = "Example Tech",
-    description: str | None = "Build Python applications.",
-    location: str | None = "Poland",
-    url: str = "https://example.com/python-developer",
-    source: str = "himalayas",
-    published_at: datetime | None = None,
-) -> ParsedJob:
-    return ParsedJob(
-        title=title,
-        company=company,
-        description=description,
-        location=location,
-        url=url,
-        source=source,
-        published_at=published_at,
-    )
+def make_job(**overrides) -> ParsedJob:
+    data = {
+        "title": "Python Developer",
+        "company": "Example Tech",
+        "description": "Build Python applications.",
+        "location": "Poland",
+        "url": "https://example.com/python-developer",
+        "source": "himalayas",
+        "published_at": None,
+    }
+    data.update(overrides)
+    return ParsedJob(**data)
 
 
 def test_save_job(db_session):
-    parsed_job = make_job()
+    parsed = make_job()
 
-    job, inserted = save_job(db_session, parsed_job)
+    job, inserted = save_job(db_session, parsed)
 
-    assert inserted is True
+    assert inserted
     assert job.id is not None
-    assert job.title == "Python Developer"
-    assert job.company == "Example Tech"
-    assert job.description == "Build Python applications."
-    assert job.location == "Poland"
-    assert job.url == "https://example.com/python-developer"
-    assert job.source == "himalayas"
+    assert job.title == parsed.title
+    assert job.company == parsed.company
+    assert job.description == parsed.description
+    assert job.location == parsed.location
+    assert job.url == parsed.url
+    assert job.source == parsed.source
     assert job.published_at is None
 
 
 def test_save_job_duplicate_url(db_session):
-    parsed_job = make_job()
+    first, inserted_first = save_job(db_session, make_job())
+    second, inserted_second = save_job(db_session, make_job())
 
-    first_job, first_inserted = save_job(db_session, parsed_job)
-    second_job, second_inserted = save_job(db_session, parsed_job)
-
-    assert first_inserted is True
-    assert second_inserted is False
-    assert first_job.id == second_job.id
-
-    jobs = db_session.scalars(select(Job)).all()
-    assert len(jobs) == 1
+    assert inserted_first and not inserted_second
+    assert first.id == second.id
+    assert db_session.scalar(select(Job.id)) == first.id
 
 
 def test_parsed_job_rejects_invalid_title():
@@ -69,76 +56,70 @@ def test_parsed_job_rejects_invalid_title():
         make_job(title="X" * 300)
 
 
-def test_save_jobs_skips_invalid_job(db_session):
-    valid_job_1 = make_job(url="https://example.com/python")
-    valid_job_2 = make_job(
-        title="Backend Engineer",
-        url="https://example.com/backend",
-    )
+def test_save_jobs(db_session):
+    jobs = [
+        make_job(url="https://example.com/python"),
+        make_job(title="Backend Engineer", url="https://example.com/backend"),
+    ]
 
-    inserted_count = service.save_jobs(
-        db_session,
-        [valid_job_1, valid_job_2],
-    )
-
-    saved_jobs = db_session.scalars(select(Job)).all()
-
-    assert inserted_count == 2
-    assert len(saved_jobs) == 2
-    assert {job.url for job in saved_jobs} == {
+    assert service.save_jobs(db_session, jobs) == 2
+    assert set(db_session.scalars(select(Job.url))) == {
         "https://example.com/python",
         "https://example.com/backend",
     }
 
 
-def test_ingest_himalayas(db_session, monkeypatch):
-    feed = "<rss>dummy</rss>"
-
+@pytest.mark.parametrize(
+    ("source", "fetch_name", "parse_name", "fetch_result", "job_source", "base_url"),
+    [
+        (
+            "himalayas",
+            "fetch_feed",
+            "parse_himalayas_jobs",
+            "<rss>dummy</rss>",
+            "himalayas",
+            "https://example.com/jobs",
+        ),
+        (
+            "arbeitnow",
+            "fetch_arbeitnow_jobs",
+            "parse_arbeitnow_jobs",
+            {"data": [{"title": "Python Developer"}]},
+            "arbeitnow",
+            "https://arbeitnow.com/jobs",
+        ),
+    ],
+)
+def test_ingest_source(
+    db_session,
+    monkeypatch,
+    source,
+    fetch_name,
+    parse_name,
+    fetch_result,
+    job_source,
+    base_url,
+):
     parsed_jobs = [
-        make_job(url="https://example.com/python-dev"),
+        make_job(url=f"{base_url}/python-dev", source=job_source),
         make_job(
             title="Backend Engineer",
             company="Another Tech",
             location="Germany",
-            url="https://example.com/backend-eng",
+            url=f"{base_url}/backend-eng",
+            source=job_source,
         ),
     ]
+    monkeypatch.setattr(service, fetch_name, lambda: fetch_result)
+    monkeypatch.setattr(service, parse_name, lambda _: parsed_jobs)
 
-    monkeypatch.setattr(service, "fetch_feed", lambda: feed)
-    monkeypatch.setattr(service, "parse_himalayas_jobs", lambda _: parsed_jobs)
+    ingest = {
+        "himalayas": ingest_himalayas,
+        "arbeitnow": ingest_arbeitnow,
+    }[source]
 
-    job_count = ingest_himalayas(db_session)
+    assert ingest(db_session) == 2
 
-    assert job_count == 2
-
-    jobs = db_session.scalars(select(Job)).all()
-    assert len(jobs) == 2
-
-
-def test_ingest_arbeitnow(db_session, monkeypatch):
-    data = {"data": [{"title": "Python Developer"}]}
-
-    parsed_jobs = [
-        make_job(
-            url="https://arbeitnow.com/jobs/python-dev",
-            source="arbeitnow",
-        ),
-        make_job(
-            title="Backend Engineer",
-            company="Another Tech",
-            location="Germany",
-            url="https://arbeitnow.com/jobs/backend-eng",
-            source="arbeitnow",
-        ),
-    ]
-
-    monkeypatch.setattr(service, "fetch_arbeitnow_jobs", lambda: data)
-    monkeypatch.setattr(service, "parse_arbeitnow_jobs", lambda _: parsed_jobs)
-
-    job_count = ingest_arbeitnow(db_session)
-
-    assert job_count == 2
-
-    jobs = db_session.scalars(select(Job)).all()
-    assert len(jobs) == 2
-    assert all(job.source == "arbeitnow" for job in jobs)
+    saved_jobs = db_session.scalars(select(Job)).all()
+    assert len(saved_jobs) == 2
+    assert {job.source for job in saved_jobs} == {job_source}

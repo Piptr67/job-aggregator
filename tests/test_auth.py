@@ -357,3 +357,31 @@ def test_google_login_clears_password_for_unverified_existing_user(client, db_se
         },
     )
     assert login_response.status_code == 401
+
+
+def test_google_login_rejects_missing_email(client):
+    with patch(
+        "job_aggregator.api.routes.auth.verify_google_token",
+        return_value={"sub": "google-user-no-email"},
+    ):
+        response = client.post(
+            "/api/v1/auth/google",
+            json={"id_token": "fake-google-token"},
+        )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Google account has no valid email"
+
+
+def test_google_login_rejects_empty_email(client):
+    with patch(
+        "job_aggregator.api.routes.auth.verify_google_token",
+        return_value={"email": ""},
+    ):
+        response = client.post(
+            "/api/v1/auth/google",
+            json={"id_token": "fake-google-token"},
+        )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Google account has no valid email"

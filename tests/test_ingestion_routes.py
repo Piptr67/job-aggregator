@@ -23,9 +23,10 @@ def authenticated_headers(db_session) -> dict[str, str]:
 def test_ingestion_himalayas_success(client, db_session):
     headers = authenticated_headers(db_session)
 
-    with patch("job_aggregator.api.routes.ingestion.SOURCE_REGISTRY") as registry:
-        registry.get.return_value = lambda db: 3
-
+    with patch(
+        "job_aggregator.api.routes.ingestion.ingest_himalayas",
+        return_value=3,
+    ):
         response = client.post("/api/v1/ingestion/himalayas", headers=headers)
 
     assert response.status_code == 200
@@ -35,13 +36,33 @@ def test_ingestion_himalayas_success(client, db_session):
 def test_ingestion_arbeitnow_success(client, db_session):
     headers = authenticated_headers(db_session)
 
-    with patch("job_aggregator.api.routes.ingestion.SOURCE_REGISTRY") as registry:
-        registry.get.return_value = lambda db: 2
-
+    with patch(
+        "job_aggregator.api.routes.ingestion.ingest_arbeitnow",
+        return_value=2,
+    ):
         response = client.post("/api/v1/ingestion/arbeitnow", headers=headers)
 
     assert response.status_code == 200
     assert response.json() == {"jobs_processed": 2}
+
+
+def test_ingestion_all_sources_success(client, db_session):
+    headers = authenticated_headers(db_session)
+
+    with (
+        patch(
+            "job_aggregator.api.routes.ingestion.ingest_himalayas",
+            return_value=3,
+        ),
+        patch(
+            "job_aggregator.api.routes.ingestion.ingest_arbeitnow",
+            return_value=2,
+        ),
+    ):
+        response = client.post("/api/v1/ingestion/all", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json() == {"jobs_processed": 5}
 
 
 def test_ingestion_unsupported_source(client, db_session):
@@ -56,16 +77,17 @@ def test_ingestion_unsupported_source(client, db_session):
 def test_ingestion_upstream_failure_returns_502(client, db_session):
     headers = authenticated_headers(db_session)
 
-    def raise_connection_error(db):
-        raise requests.ConnectionError("Upstream unavailable")
-
-    with patch("job_aggregator.api.routes.ingestion.SOURCE_REGISTRY") as registry:
-        registry.get.return_value = raise_connection_error
-
+    with patch(
+        "job_aggregator.api.routes.ingestion.ingest_himalayas",
+        side_effect=requests.ConnectionError("Upstream unavailable"),
+    ):
         response = client.post("/api/v1/ingestion/himalayas", headers=headers)
 
     assert response.status_code == 502
-    assert response.json()["detail"] == "Failed to fetch jobs from himalayas"
+    assert response.json()["detail"] == {
+        "jobs_processed": 0,
+        "failed_sources": ["himalayas"],
+    }
 
 
 def test_ingestion_requires_authentication(client):

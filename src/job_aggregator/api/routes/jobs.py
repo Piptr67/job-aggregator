@@ -1,7 +1,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from job_aggregator.api.dependencies import get_current_user, get_db
@@ -34,7 +34,9 @@ def get_jobs(
         )
 
     if company:
-        query = query.where(Job.company.ilike(f"%{escape_like(company)}%", escape="\\"))
+        query = query.where(
+            Job.company.ilike(f"%{escape_like(company)}%", escape="\\")
+        )
 
     if q:
         search_term = f"%{escape_like(q)}%"
@@ -45,6 +47,10 @@ def get_jobs(
                 Job.description.ilike(search_term, escape="\\"),
             )
         )
+
+    total = db.scalar(
+        select(func.count()).select_from(query.subquery())
+    ) or 0
 
     sort_columns = {
         "published_at": Job.published_at,
@@ -65,7 +71,7 @@ def get_jobs(
     result = db.scalars(query).all()
     jobs = [JobSummary.model_validate(job) for job in result]
 
-    return JobsResponse(jobs=jobs)
+    return JobsResponse(jobs=jobs, total=total)
 
 
 @router.get(

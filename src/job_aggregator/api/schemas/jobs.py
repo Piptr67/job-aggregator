@@ -14,6 +14,7 @@ class JobSummary(BaseModel):
 
 class JobsResponse(BaseModel):
     jobs: list[JobSummary]
+    total: int
 
 
 class JobDetail(BaseModel):

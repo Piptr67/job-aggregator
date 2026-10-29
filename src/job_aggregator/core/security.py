@@ -10,7 +10,7 @@ def _encode(payload: dict[str, Any]) -> str:
     return jwt.encode(
         payload,
         settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm,
+        algorithm="HS256",
     )
 
 
@@ -31,5 +31,5 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(
         token,
         settings.jwt_secret_key,
-        algorithms=[settings.jwt_algorithm],
+        algorithms=["HS256"],
     )

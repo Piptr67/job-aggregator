@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     arbeitnow_json_url: str = "https://www.arbeitnow.com/api/job-board-api"
 
     jwt_secret_key: str
-    jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
     base_url: str

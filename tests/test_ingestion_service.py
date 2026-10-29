@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -12,8 +14,8 @@ from job_aggregator.ingestion.service import (
 )
 
 
-def make_job(**overrides) -> ParsedJob:
-    data = {
+def make_job(**overrides: Any) -> ParsedJob:
+    data: dict[str, Any] = {
         "title": "Python Developer",
         "company": "Example Tech",
         "description": "Build Python applications.",

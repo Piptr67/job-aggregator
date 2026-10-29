@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Literal
 
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from job_aggregator.api.schemas.jobs import JobsResponse, JobSummary, JobDetail
-from job_aggregator.api.dependencies import get_db, get_current_user
+from job_aggregator.api.dependencies import get_current_user, get_db
+from job_aggregator.api.schemas.jobs import JobDetail, JobsResponse, JobSummary
 from job_aggregator.db.models.job import Job
 
 router = APIRouter(prefix="/jobs")
+
+
+def escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 @router.get("", response_model=JobsResponse, dependencies=[Depends(get_current_user)])
@@ -25,17 +29,20 @@ def get_jobs(
     query = select(Job)
 
     if location:
-        query = query.where(Job.location.ilike(f"%{location}%"))
+        query = query.where(
+            Job.location.ilike(f"%{escape_like(location)}%", escape="\\")
+        )
 
     if company:
-        query = query.where(Job.company.ilike(f"%{company}%"))
+        query = query.where(Job.company.ilike(f"%{escape_like(company)}%", escape="\\"))
 
     if q:
+        search_term = f"%{escape_like(q)}%"
         query = query.where(
             or_(
-                Job.title.ilike(f"%{q}%"),
-                Job.company.ilike(f"%{q}%"),
-                Job.description.ilike(f"%{q}%"),
+                Job.title.ilike(search_term, escape="\\"),
+                Job.company.ilike(search_term, escape="\\"),
+                Job.description.ilike(search_term, escape="\\"),
             )
         )
 

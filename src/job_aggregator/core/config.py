@@ -11,11 +11,6 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
-    resend_api_key: str
-    email_from: str
-
-    google_client_id: str
-
     base_url: str
 
     model_config = {

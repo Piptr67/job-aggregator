@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -85,22 +84,14 @@ def client(db_session: Session) -> Iterator[TestClient]:
         yield test_client
 
 
-@pytest.fixture(autouse=True)
-def mock_verification_email():
-    with patch("job_aggregator.api.routes.auth.send_verification_email") as mock_send:
-        yield mock_send
-
-
 @pytest.fixture
 def create_user(db_session: Session):
     def _create_user(
         email: str = "jobs-test@example.com",
-        is_verified: bool = True,
     ) -> User:
         user = User(
             email=email,
             hashed_password=None,
-            is_verified=is_verified,
         )
         db_session.add(user)
         db_session.commit()

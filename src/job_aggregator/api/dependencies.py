@@ -42,7 +42,7 @@ def get_current_user(
 
         user = db.scalar(select(User).where(User.id == int(subject)))
 
-        if user is None or not user.is_verified:
+        if user is None:
             raise credentials_exception
 
         return user

@@ -21,7 +21,3 @@ class UserResponse(BaseModel):
 
     id: int
     email: EmailStr
-
-
-class GoogleLoginRequest(BaseModel):
-    id_token: str

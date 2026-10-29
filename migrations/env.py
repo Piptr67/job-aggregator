@@ -5,7 +5,7 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 
 from job_aggregator.core.config import settings
-from job_aggregator.db.base import Base
+from job_aggregator.db.database import Base
 from job_aggregator.db.models.job import Job  # noqa: F401
 from job_aggregator.db.models.user import User  # noqa: F401
 

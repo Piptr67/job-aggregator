@@ -1,83 +1,60 @@
-from typing import Literal
-
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from job_aggregator.api.dependencies import get_current_user, get_db
 from job_aggregator.api.schemas.jobs import JobDetail, JobsResponse, JobSummary
 from job_aggregator.db.models.job import Job
+from job_aggregator.db.models.user import User
 
-router = APIRouter(
-    prefix="/jobs",
-    dependencies=[Depends(get_current_user)],
-)
+router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
-def escape_like(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
-@router.get("", response_model=JobsResponse)
-def get_jobs(
+@router.get("")
+def list_jobs(
     location: str | None = None,
     company: str | None = None,
-    q: str | None = None,
-    limit: int = Query(default=10, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
-    sort_by: Literal["published_at", "title", "company", "id"] = "published_at",
-    order: Literal["asc", "desc"] = "desc",
+    q: str | None = Query(default=None, min_length=1),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> JobsResponse:
     query = select(Job)
 
     if location:
-        query = query.where(
-            Job.location.ilike(f"%{escape_like(location)}%", escape="\\")
-        )
+        query = query.where(Job.location.icontains(location, autoescape=True))
 
     if company:
-        query = query.where(Job.company.ilike(f"%{escape_like(company)}%", escape="\\"))
+        query = query.where(Job.company.icontains(company, autoescape=True))
 
     if q:
-        search_term = f"%{escape_like(q)}%"
-        query = query.where(
-            or_(
-                Job.title.ilike(search_term, escape="\\"),
-                Job.company.ilike(search_term, escape="\\"),
-                Job.description.ilike(search_term, escape="\\"),
-            )
+        search_filter = (
+            Job.title.icontains(q, autoescape=True)
+            | Job.company.icontains(q, autoescape=True)
+            | Job.description.icontains(q, autoescape=True)
         )
+        query = query.where(search_filter)
 
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
 
-    sort_columns = {
-        "published_at": Job.published_at,
-        "title": Job.title,
-        "company": Job.company,
-        "id": Job.id,
-    }
+    jobs = db.scalars(
+        query.order_by(Job.published_at.desc().nullslast(), Job.id.desc())
+    ).all()
 
-    sort_column = sort_columns[sort_by]
-
-    if order == "desc":
-        query = query.order_by(sort_column.desc().nulls_last(), Job.id.asc())
-    else:
-        query = query.order_by(sort_column.asc().nulls_last(), Job.id.asc())
-
-    query = query.limit(limit).offset(offset)
-
-    result = db.scalars(query).all()
-    jobs = [JobSummary.model_validate(job) for job in result]
-
-    return JobsResponse(jobs=jobs, total=total)
+    return JobsResponse(
+        jobs=[JobSummary.model_validate(job) for job in jobs],
+        total=total,
+    )
 
 
-@router.get("/{job_id}", response_model=JobDetail)
-def get_job(job_id: int, db: Session = Depends(get_db)) -> JobDetail:
-    result = db.scalars(select(Job).where(Job.id == job_id)).one_or_none()
+@router.get("/{job_id}")
+def get_job(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> JobDetail:
+    job = db.get(Job, job_id)
 
-    if result is None:
-        raise HTTPException(status_code=404)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
 
-    return JobDetail.model_validate(result)
+    return JobDetail.model_validate(job)

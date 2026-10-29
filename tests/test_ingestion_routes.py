@@ -1,10 +1,9 @@
 from unittest.mock import patch
 
-import requests
-
-from job_aggregator.api.routes.ingestion import IngestionSource
 from job_aggregator.core.security import create_access_token
 from job_aggregator.db.models.user import User
+from job_aggregator.ingestion.errors import IngestionError
+from job_aggregator.ingestion.service import IngestionSource
 
 
 def authenticated_headers(db_session) -> dict[str, str]:
@@ -25,7 +24,7 @@ def test_ingestion_himalayas_success(client, db_session):
     headers = authenticated_headers(db_session)
 
     with patch.dict(
-        "job_aggregator.api.routes.ingestion.SOURCE_REGISTRY",
+        "job_aggregator.ingestion.service.SOURCE_REGISTRY",
         {IngestionSource.himalayas: lambda db: 3},
     ):
         response = client.post("/api/v1/ingestion/himalayas", headers=headers)
@@ -38,7 +37,7 @@ def test_ingestion_arbeitnow_success(client, db_session):
     headers = authenticated_headers(db_session)
 
     with patch.dict(
-        "job_aggregator.api.routes.ingestion.SOURCE_REGISTRY",
+        "job_aggregator.ingestion.service.SOURCE_REGISTRY",
         {IngestionSource.arbeitnow: lambda db: 2},
     ):
         response = client.post("/api/v1/ingestion/arbeitnow", headers=headers)
@@ -51,7 +50,7 @@ def test_ingestion_all_sources_success(client, db_session):
     headers = authenticated_headers(db_session)
 
     with patch.dict(
-        "job_aggregator.api.routes.ingestion.SOURCE_REGISTRY",
+        "job_aggregator.ingestion.service.SOURCE_REGISTRY",
         {
             IngestionSource.himalayas: lambda db: 3,
             IngestionSource.arbeitnow: lambda db: 2,
@@ -75,10 +74,10 @@ def test_ingestion_upstream_failure_returns_502(client, db_session):
     headers = authenticated_headers(db_session)
 
     def fail(db):
-        raise requests.ConnectionError("Upstream unavailable")
+        raise IngestionError("himalayas failed")
 
     with patch.dict(
-        "job_aggregator.api.routes.ingestion.SOURCE_REGISTRY",
+        "job_aggregator.ingestion.service.SOURCE_REGISTRY",
         {IngestionSource.himalayas: fail},
     ):
         response = client.post("/api/v1/ingestion/himalayas", headers=headers)

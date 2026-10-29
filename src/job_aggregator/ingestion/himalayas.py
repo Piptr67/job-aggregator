@@ -7,6 +7,7 @@ from defusedxml import ElementTree as ET
 from pydantic import ValidationError
 
 from job_aggregator.core.config import settings
+from job_aggregator.ingestion.errors import IngestionError
 from job_aggregator.ingestion.schemas import ParsedJob
 
 NAMESPACES = {
@@ -16,38 +17,36 @@ NAMESPACES = {
 
 
 def fetch_feed() -> str:
-    response = requests.get(settings.himalayas_rss_url, timeout=10)
-    response.raise_for_status()
-    return response.text
+    try:
+        response = requests.get(settings.himalayas_rss_url, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as exc:
+        raise IngestionError("Failed to fetch Himalayas feed") from exc
 
 
 def parse_jobs(feed: str) -> list[ParsedJob]:
-    root = ET.fromstring(feed)
-    channel = root.find("channel")
+    try:
+        root = ET.fromstring(feed)
+    except (ET.ParseError, ValueError) as exc:
+        raise IngestionError("Invalid Himalayas RSS feed") from exc
 
+    channel = root.find("channel")
     if channel is None:
-        raise ValueError("RSS feed is missing channel")
+        raise IngestionError("Himalayas RSS feed is missing its channel")
 
     jobs: list[ParsedJob] = []
-
     for item in channel.findall("item"):
         try:
             job = ParsedJob(
                 title=cast(str, item.findtext("title")),
                 company=cast(
                     str,
-                    item.findtext(
-                        "himalayas:companyName",
-                        namespaces=NAMESPACES,
-                    ),
+                    item.findtext("himalayas:companyName", namespaces=NAMESPACES),
                 ),
-                description=item.findtext(
-                    "content:encoded",
-                    namespaces=NAMESPACES,
-                ),
+                description=item.findtext("content:encoded", namespaces=NAMESPACES),
                 location=item.findtext(
-                    "himalayas:locationRestriction",
-                    namespaces=NAMESPACES,
+                    "himalayas:locationRestriction", namespaces=NAMESPACES
                 ),
                 url=cast(str, item.findtext("link")),
                 source="himalayas",
@@ -55,7 +54,6 @@ def parse_jobs(feed: str) -> list[ParsedJob]:
             )
         except (ValidationError, TypeError, ValueError, OverflowError):
             continue
-
         jobs.append(job)
 
     return jobs
@@ -64,5 +62,7 @@ def parse_jobs(feed: str) -> list[ParsedJob]:
 def parse_published_at(value: str | None) -> datetime | None:
     if value is None or not value.strip():
         return None
-
-    return parsedate_to_datetime(value)
+    try:
+        return parsedate_to_datetime(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise IngestionError("Invalid publication date in Himalayas feed") from exc

@@ -10,7 +10,7 @@ def _encode(payload: dict[str, Any]) -> str:
     return jwt.encode(
         payload,
         settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm,
+        algorithm="HS256",
     )
 
 
@@ -31,34 +31,5 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(
         token,
         settings.jwt_secret_key,
-        algorithms=[settings.jwt_algorithm],
+        algorithms=["HS256"],
     )
-
-
-def create_verification_token(email: str) -> str:
-    expires_at = datetime.now(UTC) + timedelta(hours=24)
-
-    payload = {
-        "sub": email,
-        "purpose": "email_verification",
-        "exp": expires_at,
-    }
-
-    return _encode(payload)
-
-
-def decode_verification_token(token: str) -> str:
-    payload = jwt.decode(
-        token,
-        settings.jwt_secret_key,
-        algorithms=[settings.jwt_algorithm],
-    )
-
-    if payload.get("purpose") != "email_verification":
-        raise jwt.InvalidTokenError("Invalid verification token")
-
-    email = payload.get("sub")
-    if not isinstance(email, str) or not email:
-        raise jwt.InvalidTokenError("Invalid verification token")
-
-    return email

@@ -5,6 +5,7 @@ import requests
 
 from job_aggregator.ingestion import arbeitnow
 from job_aggregator.ingestion.arbeitnow import parse_jobs
+from job_aggregator.ingestion.errors import IngestionError
 
 
 def test_parse_jobs():
@@ -108,5 +109,7 @@ def test_fetch_jobs_errors(monkeypatch, error):
 
     monkeypatch.setattr(arbeitnow.requests, "get", fake_get)
 
-    with pytest.raises(type(error)):
+    with pytest.raises(IngestionError) as exc_info:
         arbeitnow.fetch_jobs()
+
+    assert isinstance(exc_info.value.__cause__, requests.RequestException)

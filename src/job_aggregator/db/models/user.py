@@ -1,7 +1,7 @@
-from sqlalchemy import Boolean, String
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from job_aggregator.db.base import Base
+from job_aggregator.db.database import Base
 
 
 class User(Base):
@@ -9,5 +9,5 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True)
-    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    hashed_password: Mapped[str | None] = mapped_column(String(255))
+    is_verified: Mapped[bool] = mapped_column(default=False)

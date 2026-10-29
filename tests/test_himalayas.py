@@ -2,6 +2,7 @@ import pytest
 import requests
 
 from job_aggregator.ingestion import himalayas
+from job_aggregator.ingestion.errors import IngestionError
 from job_aggregator.ingestion.himalayas import parse_jobs
 
 FEED = """
@@ -117,5 +118,7 @@ def test_fetch_feed_errors(monkeypatch, error):
 
     monkeypatch.setattr(himalayas.requests, "get", fake_get)
 
-    with pytest.raises(type(error)):
+    with pytest.raises(IngestionError) as exc_info:
         himalayas.fetch_feed()
+
+    assert isinstance(exc_info.value.__cause__, requests.RequestException)

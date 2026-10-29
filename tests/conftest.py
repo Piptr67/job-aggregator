@@ -4,10 +4,13 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic_settings import BaseSettings
 from sqlalchemy import create_engine, delete
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from job_aggregator.api.dependencies import get_db
+from job_aggregator.core.config import settings
 from job_aggregator.core.security import create_access_token
+from job_aggregator.db.database import Base
 from job_aggregator.db.models.job import Job
 from job_aggregator.db.models.user import User
 from job_aggregator.main import app
@@ -18,13 +21,37 @@ class TestSettings(BaseSettings):
 
     model_config = {
         "env_file": ".env.test",
+        "extra": "ignore",
     }
 
 
-settings = TestSettings()  # type: ignore[call-arg]
+test_settings = TestSettings()  # type: ignore[call-arg]
 
-test_engine = create_engine(settings.test_database_url)
-TestSessionLocal = sessionmaker[Session](bind=test_engine)
+
+def database_target(url: str) -> tuple[str | None, int | None, str | None]:
+    parsed = make_url(url)
+    return parsed.host, parsed.port, parsed.database
+
+
+if database_target(test_settings.test_database_url) == database_target(
+    settings.database_url
+):
+    raise RuntimeError(
+        "TEST_DATABASE_URL points to the development database. "
+        "Configure a separate test database before running tests."
+    )
+
+
+test_engine = create_engine(test_settings.test_database_url)
+TestSessionLocal = sessionmaker(bind=test_engine, class_=Session)
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    Base.metadata.create_all(bind=test_engine)
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    test_engine.dispose()
 
 
 @pytest.fixture
@@ -57,24 +84,14 @@ def client(db_session: Session) -> Iterator[TestClient]:
         yield test_client
 
 
-@pytest.fixture(autouse=True)
-def mock_verification_email():
-    from unittest.mock import patch
-
-    with patch("job_aggregator.api.routes.auth.send_verification_email") as mock_send:
-        yield mock_send
-
-
 @pytest.fixture
 def create_user(db_session: Session):
     def _create_user(
         email: str = "jobs-test@example.com",
-        is_verified: bool = True,
     ) -> User:
         user = User(
             email=email,
             hashed_password=None,
-            is_verified=is_verified,
         )
         db_session.add(user)
         db_session.commit()

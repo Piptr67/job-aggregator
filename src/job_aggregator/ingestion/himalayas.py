@@ -8,7 +8,6 @@ from pydantic import ValidationError
 from job_aggregator.core.config import settings
 from job_aggregator.ingestion.schemas import ParsedJob
 
-
 NAMESPACES = {
     "himalayas": "https://himalayas.app/ns/jobs",
     "content": "http://purl.org/rss/1.0/modules/content/",

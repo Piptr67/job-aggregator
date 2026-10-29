@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 from pydantic import ValidationError
@@ -27,7 +27,7 @@ def parse_jobs(data: dict) -> list[ParsedJob]:
                 source="arbeitnow",
                 published_at=datetime.fromtimestamp(
                     job["created_at"],
-                    tz=timezone.utc,
+                    tz=UTC,
                 ),
             )
         except (ValidationError, KeyError, TypeError, ValueError, OverflowError):

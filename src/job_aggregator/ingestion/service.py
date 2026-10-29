@@ -5,10 +5,14 @@ from sqlalchemy.orm import Session
 from job_aggregator.db.models.job import Job
 from job_aggregator.ingestion.arbeitnow import (
     fetch_jobs as fetch_arbeitnow_jobs,
+)
+from job_aggregator.ingestion.arbeitnow import (
     parse_jobs as parse_arbeitnow_jobs,
 )
 from job_aggregator.ingestion.himalayas import (
     fetch_feed,
+)
+from job_aggregator.ingestion.himalayas import (
     parse_jobs as parse_himalayas_jobs,
 )
 from job_aggregator.ingestion.schemas import ParsedJob

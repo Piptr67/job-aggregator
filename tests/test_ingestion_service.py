@@ -1,17 +1,17 @@
-from pydantic import ValidationError
-import pytest
-
 from datetime import datetime
+
+import pytest
+from pydantic import ValidationError
 from sqlalchemy import select
 
 from job_aggregator.db.models.job import Job
 from job_aggregator.ingestion import service
+from job_aggregator.ingestion.schemas import ParsedJob
 from job_aggregator.ingestion.service import (
     ingest_arbeitnow,
     ingest_himalayas,
     save_job,
 )
-from job_aggregator.ingestion.schemas import ParsedJob
 
 
 def make_job(

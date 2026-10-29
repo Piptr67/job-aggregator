@@ -1,10 +1,11 @@
-from fastapi.testclient import TestClient
 from unittest.mock import patch
 
-from pydantic_settings import BaseSettings
 import pytest
+from fastapi.testclient import TestClient
+from pydantic_settings import BaseSettings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
 from job_aggregator.api.dependencies import get_db
 from job_aggregator.db.models.job import Job
 from job_aggregator.db.models.user import User

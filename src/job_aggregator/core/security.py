@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -15,7 +15,7 @@ def _encode(payload: dict[str, Any]) -> str:
 
 
 def create_access_token(subject: str) -> str:
-    expires_at = datetime.now(timezone.utc) + timedelta(
+    expires_at = datetime.now(UTC) + timedelta(
         minutes=settings.access_token_expire_minutes
     )
 
@@ -36,7 +36,7 @@ def decode_access_token(token: str) -> dict:
 
 
 def create_verification_token(email: str) -> str:
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
 
     payload = {
         "sub": email,

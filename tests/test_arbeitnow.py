@@ -1,7 +1,7 @@
+from datetime import UTC, datetime
+
 import pytest
 import requests
-
-from datetime import datetime, timezone
 
 from job_aggregator.ingestion import arbeitnow
 from job_aggregator.ingestion.arbeitnow import parse_jobs
@@ -41,7 +41,7 @@ def test_parse_jobs():
     assert job.url == "https://example.com/python-developer"
     assert job.source == "arbeitnow"
     assert job.description == "Python apps."
-    assert job.published_at == datetime.fromtimestamp(1791474099, tz=timezone.utc)
+    assert job.published_at == datetime.fromtimestamp(1791474099, tz=UTC)
     assert job.published_at.tzinfo is not None
 
     second_job = jobs[1]
@@ -53,7 +53,7 @@ def test_parse_jobs():
     assert second_job.source == "arbeitnow"
     assert second_job.description == "Backend systems."
     assert second_job.published_at == datetime.fromtimestamp(
-        1791532800, tz=timezone.utc
+        1791532800, tz=UTC
     )
 
 

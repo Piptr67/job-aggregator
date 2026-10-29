@@ -1,11 +1,13 @@
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from google.auth.exceptions import GoogleAuthError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from job_aggregator.api.dependencies import get_db
 from job_aggregator.api.schemas.auth import (
+    EmailRequest,
     GoogleLoginRequest,
     RegisterRequest,
     TokenRequest,
@@ -55,30 +57,70 @@ def login(credentials: TokenRequest, db: Session = Depends(get_db)) -> TokenResp
 
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(
-    credentials: RegisterRequest, db: Session = Depends(get_db)
+    credentials: RegisterRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ) -> UserResponse:
-    existing_user = db.scalars(
-        select(User).where(User.email == credentials.email.strip().lower())
-    ).one_or_none()
+    email = credentials.email.strip().lower()
+
+    existing_user = db.scalars(select(User).where(User.email == email)).one_or_none()
 
     if existing_user is not None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
         )
 
     user = User(
-        email=credentials.email.strip().lower(),
+        email=email,
         hashed_password=hash_password(credentials.password),
     )
-
     db.add(user)
-    db.commit()
-    db.refresh(user)
 
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
+        ) from None
+
+    db.refresh(user)
     verification_token = create_verification_token(user.email)
-    send_verification_email(user.email, verification_token)
+    background_tasks.add_task(
+        send_verification_email,
+        user.email,
+        verification_token,
+    )
 
     return UserResponse.model_validate(user)
+
+
+@router.post("/resend-verification")
+def resend_verification(
+    request: EmailRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    email = request.email.strip().lower()
+    email = email.strip().lower()
+    user = db.scalars(select(User).where(User.email == email)).one_or_none()
+
+    if user is not None and not user.is_verified:
+        verification_token = create_verification_token(user.email)
+        background_tasks.add_task(
+            send_verification_email,
+            user.email,
+            verification_token,
+        )
+
+    return {
+        "message": (
+            "If an unverified account exists for that email, "
+            "a verification email will be sent."
+        )
+    }
 
 
 @router.get("/verify-email")
@@ -94,6 +136,7 @@ def verify_email(
             detail="Invalid or expired verification link",
         ) from None
 
+    email = email.strip().lower()
     user = db.scalars(select(User).where(User.email == email)).one_or_none()
 
     if user is None:
@@ -130,6 +173,7 @@ def google_login(
             detail="Google account has no valid email",
         )
 
+    email = email.strip().lower()
     user = db.scalars(select(User).where(User.email == email)).one_or_none()
 
     if user is None:

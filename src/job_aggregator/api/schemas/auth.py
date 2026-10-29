@@ -25,3 +25,7 @@ class UserResponse(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     id_token: str
+
+
+class EmailRequest(BaseModel):
+    email: EmailStr

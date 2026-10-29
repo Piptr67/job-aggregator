@@ -17,7 +17,7 @@ from job_aggregator.db.models.user import User
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/token", response_model=TokenResponse)
+@router.post("/token")
 def login(credentials: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
     email = credentials.email.strip().lower()
     user = db.scalars(select(User).where(User.email == email)).one_or_none()
@@ -37,7 +37,7 @@ def login(credentials: TokenRequest, db: Session = Depends(get_db)) -> TokenResp
     return TokenResponse(access_token=access_token, token_type="bearer")
 
 
-@router.post("/register", response_model=UserResponse, status_code=201)
+@router.post("/register", status_code=201)
 def register(
     credentials: RegisterRequest, db: Session = Depends(get_db)
 ) -> UserResponse:

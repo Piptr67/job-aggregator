@@ -10,7 +10,7 @@ from job_aggregator.db.models.user import User
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
-@router.get("", response_model=JobsResponse)
+@router.get("")
 def list_jobs(
     location: str | None = None,
     company: str | None = None,
@@ -46,7 +46,7 @@ def list_jobs(
     )
 
 
-@router.get("/{job_id}", response_model=JobDetail)
+@router.get("/{job_id}")
 def get_job(
     job_id: int,
     current_user: User = Depends(get_current_user),

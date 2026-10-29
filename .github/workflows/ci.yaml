@@ -67,3 +67,6 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+
+      - name: Build Docker image
+        run: docker build --tag job-aggregator:ci .

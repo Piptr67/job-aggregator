@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from job_aggregator.db.base import Base
+from job_aggregator.db.database import Base
 
 
 class Job(Base):

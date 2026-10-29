@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from job_aggregator.core.security import decode_access_token
 from job_aggregator.db.models.user import User
-from job_aggregator.db.session import SessionLocal
+from job_aggregator.db.database import SessionLocal
 
 bearer_scheme = HTTPBearer()
 

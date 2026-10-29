@@ -1,7 +1,7 @@
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from job_aggregator.db.base import Base
+from job_aggregator.db.database import Base
 
 
 class User(Base):

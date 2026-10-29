@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from job_aggregator.api.dependencies import get_db
 from job_aggregator.core.config import settings
 from job_aggregator.core.security import create_access_token
-from job_aggregator.db.base import Base
+from job_aggregator.db.database import Base
 from job_aggregator.db.models.job import Job
 from job_aggregator.db.models.user import User
 from job_aggregator.main import app

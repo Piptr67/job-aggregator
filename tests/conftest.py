@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 from pydantic_settings import BaseSettings
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import Session, sessionmaker
 
 from job_aggregator.api.dependencies import get_db
@@ -34,8 +34,8 @@ def db_session():
         yield db
     finally:
         db.rollback()
-        db.query(Job).delete()
-        db.query(User).delete()
+        db.execute(delete(Job))
+        db.execute(delete(User))
         db.commit()
         db.close()
 

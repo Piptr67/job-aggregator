@@ -27,7 +27,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/token", response_model=TokenResponse)
 def login(credentials: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    user = db.scalars(select(User).where(User.email == credentials.email)).one_or_none()
+    email = credentials.email.strip().lower()
+    email = email.strip().lower()
+    user = db.scalars(select(User).where(User.email == email)).one_or_none()
 
     if (
         user is None
@@ -56,7 +58,7 @@ def register(
     credentials: RegisterRequest, db: Session = Depends(get_db)
 ) -> UserResponse:
     existing_user = db.scalars(
-        select(User).where(User.email == credentials.email)
+        select(User).where(User.email == credentials.email.strip().lower())
     ).one_or_none()
 
     if existing_user is not None:
@@ -65,7 +67,8 @@ def register(
         )
 
     user = User(
-        email=credentials.email, hashed_password=hash_password(credentials.password)
+        email=credentials.email.strip().lower(),
+        hashed_password=hash_password(credentials.password),
     )
 
     db.add(user)
@@ -84,7 +87,7 @@ def verify_email(
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
     try:
-        email = decode_verification_token(token)
+        email = decode_verification_token(token).strip().lower()
     except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

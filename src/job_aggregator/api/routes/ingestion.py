@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from enum import StrEnum
+from xml.etree.ElementTree import ParseError
 
 import requests
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from job_aggregator.api.dependencies import get_current_user, get_db
@@ -29,47 +30,32 @@ SOURCE_REGISTRY: dict[IngestionSource, Callable[[Session], int]] = {
 
 @router.post("/{source}")
 def trigger_ingestion(
-    source: str = Path(
-        ...,
-        enum=[source.value for source in IngestionSource],
-    ),
+    source: IngestionSource,
     db: Session = Depends(get_db),
 ) -> dict[str, int]:
-    try:
-        selected_source = IngestionSource(source)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Unsupported ingestion source: {source}",
-        ) from exc
+    source_names = list(SOURCE_REGISTRY) if source == IngestionSource.all else [source]
 
-    source_names = (
-        list(SOURCE_REGISTRY)
-        if selected_source == IngestionSource.all
-        else [selected_source]
-    )
-
-    total_processed = 0
+    total_inserted = 0
     failures: list[str] = []
 
     for source_name in source_names:
-        ingestion_function = {
-            IngestionSource.himalayas: ingest_himalayas,
-            IngestionSource.arbeitnow: ingest_arbeitnow,
-        }[source_name]
-
         try:
-            total_processed += ingestion_function(db)
+            total_inserted += SOURCE_REGISTRY[source_name](db)
         except requests.RequestException:
             failures.append(source_name.value)
+        except (ParseError, ValueError):
+            if source_name == IngestionSource.himalayas:
+                failures.append(source_name.value)
+            else:
+                raise
 
     if failures:
         raise HTTPException(
             status_code=502,
             detail={
-                "jobs_processed": total_processed,
+                "jobs_inserted": total_inserted,
                 "failed_sources": failures,
             },
         )
 
-    return {"jobs_processed": total_processed}
+    return {"jobs_inserted": total_inserted}

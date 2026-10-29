@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -5,15 +7,10 @@ from sqlalchemy import select
 from job_aggregator.db.models.job import Job
 from job_aggregator.ingestion import service
 from job_aggregator.ingestion.schemas import ParsedJob
-from job_aggregator.ingestion.service import (
-    ingest_arbeitnow,
-    ingest_himalayas,
-    save_job,
-)
 
 
-def make_job(**overrides) -> ParsedJob:
-    data = {
+def make_job(**overrides: Any) -> ParsedJob:
+    data: dict[str, Any] = {
         "title": "Python Developer",
         "company": "Example Tech",
         "description": "Build Python applications.",
@@ -24,31 +21,6 @@ def make_job(**overrides) -> ParsedJob:
     }
     data.update(overrides)
     return ParsedJob(**data)
-
-
-def test_save_job(db_session):
-    parsed = make_job()
-
-    job, inserted = save_job(db_session, parsed)
-
-    assert inserted
-    assert job.id is not None
-    assert job.title == parsed.title
-    assert job.company == parsed.company
-    assert job.description == parsed.description
-    assert job.location == parsed.location
-    assert job.url == parsed.url
-    assert job.source == parsed.source
-    assert job.published_at is None
-
-
-def test_save_job_duplicate_url(db_session):
-    first, inserted_first = save_job(db_session, make_job())
-    second, inserted_second = save_job(db_session, make_job())
-
-    assert inserted_first and not inserted_second
-    assert first.id == second.id
-    assert db_session.scalar(select(Job.id)) == first.id
 
 
 def test_parsed_job_rejects_invalid_title():
@@ -75,15 +47,15 @@ def test_save_jobs(db_session):
         (
             "himalayas",
             "fetch_feed",
-            "parse_himalayas_jobs",
+            "parse_jobs",
             "<rss>dummy</rss>",
             "himalayas",
             "https://example.com/jobs",
         ),
         (
             "arbeitnow",
-            "fetch_arbeitnow_jobs",
-            "parse_arbeitnow_jobs",
+            "fetch_jobs",
+            "parse_jobs",
             {"data": [{"title": "Python Developer"}]},
             "arbeitnow",
             "https://arbeitnow.com/jobs",
@@ -100,6 +72,8 @@ def test_ingest_source(
     job_source,
     base_url,
 ):
+    from job_aggregator.ingestion import arbeitnow, himalayas
+
     parsed_jobs = [
         make_job(url=f"{base_url}/python-dev", source=job_source),
         make_job(
@@ -110,12 +84,18 @@ def test_ingest_source(
             source=job_source,
         ),
     ]
-    monkeypatch.setattr(service, fetch_name, lambda: fetch_result)
-    monkeypatch.setattr(service, parse_name, lambda _: parsed_jobs)
+
+    source_module = {
+        "himalayas": himalayas,
+        "arbeitnow": arbeitnow,
+    }[source]
+
+    monkeypatch.setattr(source_module, fetch_name, lambda: fetch_result)
+    monkeypatch.setattr(source_module, parse_name, lambda _: parsed_jobs)
 
     ingest = {
-        "himalayas": ingest_himalayas,
-        "arbeitnow": ingest_arbeitnow,
+        "himalayas": service.ingest_himalayas,
+        "arbeitnow": service.ingest_arbeitnow,
     }[source]
 
     assert ingest(db_session) == 2

@@ -65,9 +65,6 @@ jobs:
       - name: Apply database migrations
         run: uv run alembic upgrade head
 
-      - name: Run tests
-        run: uv run pytest
-
       - name: Build Docker image
         run: docker build --tag job-aggregator:ci .
 

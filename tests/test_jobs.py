@@ -1,19 +1,6 @@
 import pytest
 
-from job_aggregator.core.security import create_access_token
 from job_aggregator.db.models.job import Job
-from job_aggregator.db.models.user import User
-
-
-def create_user(db_session):
-    user = User(
-        email="jobs-test@example.com",
-        hashed_password=None,
-        is_verified=True,
-    )
-    db_session.add(user)
-    db_session.commit()
-    return user
 
 
 def create_job(db_session):
@@ -28,14 +15,12 @@ def create_job(db_session):
     return job
 
 
-def auth_headers(db_session):
-    user = create_user(db_session)
-    return {"Authorization": f"Bearer {create_access_token(subject=str(user.id))}"}
-
-
 @pytest.mark.parametrize(
     "headers",
-    [None, {"Authorization": "Bearer definitely-not-a-valid-token"}],
+    [
+        None,
+        {"Authorization": "Bearer definitely-not-a-valid-token"},
+    ],
     ids=["missing-token", "invalid-token"],
 )
 def test_get_jobs_rejects_invalid_auth(client, headers):
@@ -45,9 +30,9 @@ def test_get_jobs_rejects_invalid_auth(client, headers):
     assert response.headers["www-authenticate"] == "Bearer"
 
 
-def test_get_jobs(client, db_session):
+def test_get_jobs(client, db_session, auth_headers):
     job = create_job(db_session)
-    headers = auth_headers(db_session)
+    headers = auth_headers()
 
     response = client.get("/api/v1/jobs", headers=headers)
 
@@ -62,12 +47,12 @@ def test_get_jobs(client, db_session):
     ]
 
 
-def test_get_job(client, db_session):
+def test_get_job(client, db_session, auth_headers):
     job = create_job(db_session)
 
     response = client.get(
         f"/api/v1/jobs/{job.id}",
-        headers=auth_headers(db_session),
+        headers=auth_headers(),
     )
 
     assert response.status_code == 200
@@ -83,10 +68,10 @@ def test_get_job(client, db_session):
     }
 
 
-def test_get_job_not_found(client, db_session):
+def test_get_job_not_found(client, auth_headers):
     response = client.get(
         "/api/v1/jobs/999999",
-        headers=auth_headers(db_session),
+        headers=auth_headers(),
     )
 
     assert response.status_code == 404

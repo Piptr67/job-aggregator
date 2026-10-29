@@ -11,3 +11,6 @@ backup_data.sql
 .coverage
 .coverage.*
 htmlcov/
+.env
+.env.*
+!.env.example

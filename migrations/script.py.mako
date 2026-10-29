@@ -1,3 +1,4 @@
+
 """${message}
 
 Revision ID: ${up_revision}
@@ -12,7 +13,7 @@ import sqlalchemy as sa
 ${imports if imports else ""}
 
 # revision identifiers, used by Alembic.
-revision: str = ${repr(revision)}
+revision: str = ${repr(up_revision)}
 down_revision: str | Sequence[str] | None = ${repr(down_revision)}
 branch_labels: str | Sequence[str] | None = ${repr(branch_labels)}
 depends_on: str | Sequence[str] | None = ${repr(depends_on)}
